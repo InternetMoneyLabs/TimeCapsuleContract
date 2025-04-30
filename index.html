@@ -43,7 +43,7 @@
         <ul>
             <li>✅ **Storage Fee:** 0.0001 Signet BTC (paid during transaction).</li>
             <li>✅ **Total Transaction Cost:** Your network fee + storage fee.</li>
-            <li>✅ **Where the Fee Goes:** 50% is distributed to the first unlocker, 50% supports contract operation.</li>
+            <li>✅ **Where the Fee Goes:** 25% is distributed to the first unlocker, 15% to the second, and 10% to the third unlocker. The remaining 40% supports contract operation.</li>
         </ul>
 
         <h2>🔄 How the Process Works</h2>
@@ -62,6 +62,9 @@
         <h2>✉ Store Your Message</h2>
         <textarea id="message" placeholder="Write your message here..."></textarea>
         <button onclick="encryptMessage()">Encrypt & Generate Transaction</button>
+
+        <h2>🔒 Encrypted Message</h2>
+        <p id="encryptedMessageOutput"></p>
 
         <h2>📜 Transaction Data</h2>
         <p id="output"></p>
