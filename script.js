@@ -10,7 +10,8 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
             console.log("Detected network:", network); // Debugging: Log the network value
 
             // Normalize the network name for comparison
-            if (network.trim().toLowerCase() !== "signet") {
+            const normalizedNetwork = network.trim().toLowerCase();
+            if (normalizedNetwork !== "signet" && normalizedNetwork !== "bitcoin-signet") {
                 alert("⚠ You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
                 document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
             } else if (accounts && accounts.length > 0) {
