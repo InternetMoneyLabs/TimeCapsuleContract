@@ -1,7 +1,6 @@
 document.getElementById("connectWallet").addEventListener("click", async () => {
     if (window.unisat) {
         try {
-            // Check if the Unisat Wallet is available
             console.log("Unisat Wallet detected."); // Debugging: Log wallet detection
 
             // Request accounts from Unisat wallet
@@ -22,31 +21,8 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
             }
 
             if (accounts && accounts.length > 0) {
-                const CONTRACT_ADDRESS = "tb1psc5acrr862j3c7qgfrspsdh72822wdym22gk5t8uar8j52wzxc0q3c3tql";
-                const API_BASE_URL = "https://api.bestinslot.xyz";
-
-                async function fetchTransactions() {
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/brc-20/address/${CONTRACT_ADDRESS}`);
-                        if (!response.ok) {
-                            throw new Error(`Error fetching transactions: ${response.statusText}`);
-                        }
-                        const transactions = await response.json();
-                        console.log("Transactions:", transactions);
-
-                        // Display transactions on the website
-                        const outputElement = document.getElementById("output");
-                        outputElement.innerHTML = JSON.stringify(transactions, null, 2);
-                    } catch (error) {
-                        console.error("Failed to fetch transactions:", error);
-                    }
-                }
-
-                // Update wallet status
+                console.log("Wallet connected successfully."); // Debugging: Log successful connection
                 document.getElementById("walletStatus").innerText = `Connected to Signet: ${accounts[0]}`;
-
-                // Fetch transactions
-                fetchTransactions();
             } else {
                 alert("No accounts found in Unisat Wallet. Please ensure you are logged in.");
                 document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
