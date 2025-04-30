@@ -15,7 +15,10 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
                 console.error("Unexpected network value:", network); // Log unexpected network value
                 alert("⚠ You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
                 document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
-            } else if (accounts && accounts.length > 0) {
+                return;
+            }
+
+            if (accounts && accounts.length > 0) {
                 const CONTRACT_ADDRESS = "tb1psc5acrr862j3c7qgfrspsdh72822wdym22gk5t8uar8j52wzxc0q3c3tql";
                 const API_BASE_URL = "https://api.bestinslot.xyz";
 
