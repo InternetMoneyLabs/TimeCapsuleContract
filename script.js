@@ -1,6 +1,9 @@
 document.getElementById("connectWallet").addEventListener("click", async () => {
     if (window.unisat) {
         try {
+            // Check if the Unisat Wallet is available
+            console.log("Unisat Wallet detected."); // Debugging: Log wallet detection
+
             // Request accounts from Unisat wallet
             const accounts = await window.unisat.requestAccounts();
             console.log("Connected accounts:", accounts); // Debugging: Log connected accounts
