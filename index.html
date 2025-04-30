@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Time Capsule</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Bitcoin Time Capsule</h1>
+    <p>A decentralized contract allowing users to store encrypted messages on <strong>Bitcoin Signet</strong>, retrievable only after a future block height.</p>
+
+    <h2>🚨 Important Notice: Signet BTC Only!</h2>
+    <p>
+        This contract operates on <strong>Bitcoin Signet (testnet)</strong>, which means you are <strong>NOT spending real BTC</strong>.
+        Instead, you use **Signet BTC**, which has no monetary value. You can request free Signet BTC from a faucet below.
+    </p>
+
+    <h2>🔹 Get Free Signet BTC:</h2>
+    <p>To participate, you need Signet BTC. You can claim some for free from this faucet:</p>
+    <p>➡ <a href="https://signetfaucet.com/" target="_blank">Bitcoin Signet Faucet</a></p>
+
+    <h2>🔄 Enable Signet in Your Wallet:</h2>
+    <p>
+        To use Signet BTC, follow these steps:<br>
+        ✅ **Unisat Wallet:** Go to settings → Select "Network" → Enable **Signet**.<br>
+        ✅ **Xverse Wallet:** Open the app → Go to network settings → Switch to **Signet**.<br>
+        ✅ **Other Wallets:** Check if your wallet supports Bitcoin Signet and configure it in network settings.
+    </p>
+
+    <h2>📌 What is TimeCapsuleContract?</h2>
+    <p>
+        TimeCapsuleContract is a **blockchain-based message vault** that lets users store encrypted messages on Bitcoin Signet.
+        These messages remain locked until a **specific future block height** is reached.
+        Once the unlocking time arrives, the first participant to decode and retrieve the hidden message receives **50% of the collected interaction fees**.
+    </p>
+
+    <h2>🔄 How the Process Works:</h2>
+    <ol>
+        <li><strong>Connect your Bitcoin Signet wallet</strong> (Unisat/Xverse).</li>
+        <li><strong>Enter your message</strong>, which will be encrypted locally in your browser.</li>
+        <li><strong>Sign the transaction</strong> inside your wallet.</li>
+        <li><strong>Broadcast the transaction manually</strong> to Bitcoin Signet.</li>
+        <li>🔐 **After 21 days**, the contract unlocks, and users can retrieve the hidden messages.</li>
+        <li>🏆 The first user to unlock the message receives **50% of the fees**.</li>
+    </ol>
+
+    <button id="connectWallet">Connect Wallet (Unisat/Xverse)</button>
+    <p id="walletStatus">Wallet Status: Not Connected</p>
+
+    <h2>✉ Store Your Message:</h2>
+    <textarea id="message" placeholder="Write your message here..."></textarea>
+    <button onclick="encryptMessage()">Encrypt & Generate Transaction</button>
+
+    <h2>📜 Transaction Data:</h2>
+    <p id="output"></p>
+
+    <button id="signTransaction" style="display:none;">Sign & Submit</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
