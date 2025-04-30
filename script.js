@@ -1,15 +1,24 @@
 // Detect Bitcoin Signet network when connecting wallet
 document.getElementById("connectWallet").addEventListener("click", async () => {
-    if (window.unisat) {
+    if (window.unisat || window.bitcoin) {
         try {
-            const accounts = await window.unisat.requestAccounts();
-            const network = await window.unisat.getNetwork();
+            let accounts, network;
+
+            if (window.unisat) {
+                // Unisat wallet connection
+                accounts = await window.unisat.requestAccounts();
+                network = await window.unisat.getNetwork();
+            } else if (window.bitcoin) {
+                // Xverse wallet connection
+                accounts = await window.bitcoin.request({ method: "wallet_getAccounts" });
+                network = await window.bitcoin.request({ method: "wallet_getNetwork" });
+            }
 
             console.log("Detected network:", network); // Debugging: Log the network value
 
             // Normalize the network name for comparison
             if (network.trim().toLowerCase() !== "signet") {
-                alert("Time Capsule Contract says ⚠ You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
+                alert("⚠ You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
             } else {
                 const CONTRACT_ADDRESS = "tb1psc5acrr862j3c7qgfrspsdh72822wdym22gk5t8uar8j52wzxc0q3c3tql";
                 const API_BASE_URL = "https://api.bestinslot.xyz";
@@ -38,10 +47,10 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
                 fetchTransactions();
             }
         } catch (error) {
-            alert("Time Capsule Contract says Error connecting wallet: " + error.message);
+            alert("Error connecting wallet: " + error.message);
         }
     } else {
-        alert("Time Capsule Contract says Unisat wallet not found! Please install the browser extension.");
+        alert("No compatible wallet found! Please install Unisat or Xverse wallet.");
     }
 });
 
