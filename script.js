@@ -1,18 +1,9 @@
-// Detect Bitcoin Signet network when connecting wallet
 document.getElementById("connectWallet").addEventListener("click", async () => {
-    if (window.unisat || window.bitcoin) {
+    if (window.unisat) {
         try {
-            let accounts, network;
-
-            if (window.unisat) {
-                // Unisat wallet connection
-                accounts = await window.unisat.requestAccounts();
-                network = await window.unisat.getNetwork();
-            } else if (window.bitcoin) {
-                // Xverse wallet connection
-                accounts = await window.bitcoin.request({ method: "wallet_getAccounts" });
-                network = await window.bitcoin.request({ method: "wallet_getNetwork" });
-            }
+            // Unisat wallet connection
+            const accounts = await window.unisat.requestAccounts(); // Request accounts
+            const network = await window.unisat.getNetwork(); // Get the current network
 
             console.log("Detected network:", network); // Debugging: Log the network value
 
@@ -47,10 +38,10 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
                 fetchTransactions();
             }
         } catch (error) {
-            alert("Error connecting wallet: " + error.message);
+            alert("Error connecting to Unisat Wallet: " + error.message);
         }
     } else {
-        alert("No compatible wallet found! Please install Unisat or Xverse wallet.");
+        alert("Unisat wallet not found! Please install the Unisat browser extension.");
     }
 });
 
