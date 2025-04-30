@@ -1,16 +1,19 @@
 document.getElementById("connectWallet").addEventListener("click", async () => {
     if (window.unisat) {
         try {
-            // Unisat wallet connection
-            const accounts = await window.unisat.requestAccounts(); // Request accounts
-            const network = await window.unisat.getNetwork(); // Get the current network
+            // Request accounts from Unisat wallet
+            const accounts = await window.unisat.requestAccounts();
+            console.log("Connected accounts:", accounts); // Debugging: Log connected accounts
 
+            // Get the current network from Unisat wallet
+            const network = await window.unisat.getNetwork();
             console.log("Detected network:", network); // Debugging: Log the network value
 
             // Normalize the network name for comparison
             if (network.trim().toLowerCase() !== "signet") {
                 alert("⚠ You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
-            } else {
+                document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
+            } else if (accounts && accounts.length > 0) {
                 const CONTRACT_ADDRESS = "tb1psc5acrr862j3c7qgfrspsdh72822wdym22gk5t8uar8j52wzxc0q3c3tql";
                 const API_BASE_URL = "https://api.bestinslot.xyz";
 
@@ -36,12 +39,18 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
 
                 // Fetch transactions
                 fetchTransactions();
+            } else {
+                alert("No accounts found in Unisat Wallet. Please ensure you are logged in.");
+                document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
             }
         } catch (error) {
+            console.error("Error connecting to Unisat Wallet:", error);
             alert("Error connecting to Unisat Wallet: " + error.message);
+            document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
         }
     } else {
         alert("Unisat wallet not found! Please install the Unisat browser extension.");
+        document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
     }
 });
 
