@@ -10,19 +10,39 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
             // Get the current network from Unisat wallet
             const network = await window.unisat.getNetwork();
             console.log("Detected network:", network); // Debugging: Log the network value
+            console.log("Network type:", typeof network); // Log the type of the network value
 
-            // More robust network detection
-            const normalizedNetwork = network ? network.toString().trim().toLowerCase() : "";
-            console.log("Normalized network:", normalizedNetwork); // Log normalized value for debugging
+            // More comprehensive network detection
+            let isSignet = false;
             
-            // Check if network is Signet (accepting various possible return formats)
-            if (normalizedNetwork === "signet" || 
-                normalizedNetwork === "bitcoin-signet" || 
-                normalizedNetwork === "2" || // Some wallets use numeric codes
-                normalizedNetwork.includes("signet")) {
-                console.log("Signet network confirmed"); // Log confirmation
-            } else {
-                console.error("Unexpected network value:", network); // Log unexpected network value
+            // Handle different return types and formats
+            if (typeof network === 'string') {
+                const normalizedNetwork = network.trim().toLowerCase();
+                console.log("Normalized network (string):", normalizedNetwork);
+                isSignet = normalizedNetwork === "signet" || 
+                           normalizedNetwork === "bitcoin-signet" || 
+                           normalizedNetwork.includes("signet");
+            } else if (typeof network === 'number') {
+                console.log("Network as number:", network);
+                // Some wallets use 2 for signet (0=mainnet, 1=testnet, 2=signet)
+                isSignet = network === 2;
+            } else if (network !== null && network !== undefined) {
+                // Try to handle object or other return types
+                const networkStr = String(network).toLowerCase();
+                console.log("Network converted to string:", networkStr);
+                isSignet = networkStr === "signet" || 
+                           networkStr === "2" || 
+                           networkStr.includes("signet");
+            }
+            
+            // Debug output
+            console.log("Is Signet detected:", isSignet);
+            
+            // Force accept connection for testing (REMOVE THIS IN PRODUCTION)
+            // isSignet = true;
+            
+            if (!isSignet) {
+                console.error("Not on Signet network. Detected:", network);
                 alert("⚠ You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
                 document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
                 return;
