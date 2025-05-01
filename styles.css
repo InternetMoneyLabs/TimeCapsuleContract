@@ -1,90 +1,410 @@
 /* General Styling */
+:root {
+    --primary-color: #008CBA;
+    --primary-hover: #005f73;
+    --background-dark: #121212;
+    --card-background: #1e1e1e;
+    --card-background-alt: #2a2a2a;
+    --text-color: #ffffff;
+    --text-secondary: #b0b0b0;
+    --border-color: #333333;
+    --success-color: #2ecc71;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --pending-color: #3498db;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #121212;
-    color: white;
-    text-align: left;
-    padding: 20px;
+    background-color: var(--background-dark);
+    color: var(--text-color);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+/* Experimental Banner */
+.experimental-banner {
+    background-color: var(--warning-color);
+    color: #000;
+    text-align: center;
+    padding: 8px;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+/* Header */
+header {
+    background-color: rgba(30, 30, 30, 0.9);
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 36px;
+    z-index: 100;
+}
+
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+h1 {
+    font-size: 1.8rem;
     margin: 0;
 }
 
-/* Centered Container */
-.container {
-    background: #1e1e1e;
-    padding: 20px;
+/* Main Content */
+main {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 20px;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 20px;
+}
+
+/* Cards */
+.info-card, .action-card, .status-card {
+    background-color: var(--card-background);
     border-radius: 10px;
-    box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);
-    max-width: 600px;
-    margin: auto;
-    text-align: left; /* Aligns text inside the container */
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Alert Box */
+.alert-box {
+    background-color: rgba(231, 76, 60, 0.2);
+    border-left: 4px solid var(--danger-color);
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 5px;
+}
+
+/* Fee Distribution */
+.fee-distribution {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.fee-item {
+    text-align: center;
+    flex: 1;
+    min-width: 80px;
+    margin: 5px;
+}
+
+.fee-percentage {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.fee-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.fee-note {
+    text-align: center;
+    margin-top: 10px;
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+/* Block Status */
+.block-info {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.block-stat {
+    flex: 1;
+    min-width: 120px;
+    margin: 5px;
+}
+
+.block-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.block-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.block-progress {
+    width: 100%;
+    height: 10px;
+    background-color: var(--card-background-alt);
+    border-radius: 5px;
+    margin: 15px 0;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: var(--primary-color);
+    width: 0%;
+    transition: width 0.5s ease-in-out;
+}
+
+/* Status Indicators */
+.status-indicator {
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+.status-indicator.pending {
+    background-color: rgba(52, 152, 219, 0.2);
+    border-left: 4px solid var(--pending-color);
+}
+
+.status-indicator.unlocked {
+    background-color: rgba(46, 204, 113, 0.2);
+    border-left: 4px solid var(--success-color);
+}
+
+/* Tabs */
+.tab-container {
+    display: flex;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    padding: 10px 15px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1rem;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-button:hover {
+    color: var(--text-color);
+}
+
+.tab-button.active {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Message List */
+.message-list {
+    margin-top: 15px;
+}
+
+.message-item {
+    background-color: var(--card-background-alt);
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.status-pending {
+    color: var(--warning-color);
+}
+
+.status-unlocked {
+    color: var(--success-color);
+}
+
+/* Search Container */
+.search-container {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+#txIdInput {
+    flex: 1;
+    padding: 10px;
+    border-radius: 5px 0 0 5px;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-background-alt);
+    color: var(--text-color);
+}
+
+.search-container button {
+    padding: 10px 15px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+}
+
+/* Message Input */
+textarea {
+    width: 100%;
+    height: 120px;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-background-alt);
+    color: var(--text-color);
+    resize: vertical;
+    margin-bottom: 5px;
+}
+
+.char-counter {
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
 }
 
 /* Buttons */
 button {
     padding: 10px 15px;
-    background: #008CBA;
+    background-color: var(--primary-color);
     color: white;
     border: none;
-    cursor: pointer;
-    font-size: 16px;
     border-radius: 5px;
-    transition: background 0.3s;
-    text-align: left;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s;
 }
 
 button:hover {
-    background: #005f73;
+    background-color: var(--primary-hover);
 }
 
-/* Faucet Link Styling */
-a {
-    color: #008CBA; /* Matches button color */
-    text-decoration: none;
+.primary-button {
+    width: 100%;
+    padding: 12px;
     font-weight: bold;
+    margin-top: 10px;
 }
 
-a:hover {
-    color: #005f73;
-    text-decoration: underline;
+/* Wallet Section */
+.wallet-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
 }
 
-/* Wallet Status */
 #walletStatus {
-    font-weight: bold;
-    color: #ff9800;
-    text-align: left;
+    margin-top: 5px;
+    font-size: 0.9rem;
+    color: var(--warning-color);
 }
 
-/* Textarea */
-textarea {
-    width: 90%;
-    height: 100px;
-    margin: 10px 0;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    padding: 10px;
-    text-align: left;
-}
-
-/* Transaction Data */
-#output {
-    background: #333;
+/* Code Block */
+.code-block {
+    background-color: var(--card-background-alt);
     padding: 10px;
     border-radius: 5px;
-    word-wrap: break-word;
     font-family: monospace;
-    text-align: left;
+    overflow-x: auto;
+    margin: 10px 0;
+}
+
+/* Transaction Details */
+.transaction-details {
+    background-color: var(--card-background-alt);
+    padding: 15px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 20px;
+    background-color: var(--card-background);
+    border-top: 1px solid var(--border-color);
+    margin-top: 40px;
+}
+
+footer p {
+    margin: 5px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.disclaimer {
+    font-style: italic;
+    font-size: 0.8rem;
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
-    .container {
-        width: 90%;
-        text-align: left;
+@media (max-width: 900px) {
+    .grid-container {
+        grid-template-columns: 1fr;
     }
+    
+    .header-content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .wallet-section {
+        margin-top: 15px;
+        align-items: center;
+    }
+    
+    h1 {
+        margin-bottom: 10px;
+    }
+}
 
-    button {
+@media (max-width: 600px) {
+    .fee-distribution {
+        flex-wrap: wrap;
+    }
+    
+    .fee-item {
+        flex-basis: 45%;
+        margin-bottom: 15px;
+    }
+    
+    .block-stat {
+        flex-basis: 100%;
+        text-align: center;
+    }
+    
+    .search-container {
+        flex-direction: column;
+    }
+    
+    #txIdInput {
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+    
+    .search-container button {
+        border-radius: 5px;
         width: 100%;
-        text-align: left;
     }
 }

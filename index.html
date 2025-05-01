@@ -15,71 +15,144 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' chrome-extension:; style-src 'self' 'unsafe-inline'; connect-src *; img-src 'self' data:;">
 </head>
 <body>
-    <div class="container">
-        <h1>Bitcoin Time Capsule</h1>
-        <p>A decentralized contract allowing users to store encrypted messages on <strong>Bitcoin Signet</strong>, retrievable only after a future block height.</p>
-
-        <h2>🚨 Important Notice: Signet BTC Only!</h2>
-        <p>
-            This contract operates on <strong>Bitcoin Signet (testnet)</strong>, meaning you are <strong>NOT spending real BTC</strong>.
-            Instead, you use **Signet BTC**, which has no monetary value. You can request free Signet BTC from a faucet below.
-        </p>
-        <p>➡ <a href="https://signetfaucet.com/" target="_blank">Bitcoin Signet Faucet</a></p>
-
-        <h2>🔹 Enable Signet in Your Wallet</h2>
-        <p>
-            To interact with the contract, switch your wallet to **Signet Mode**:<br>
-            ✅ **Unisat Wallet:** Go to settings → Select "Network" → Enable **Signet**.<br>
-        </p>
-
-        <h2>📌 What is TimeCapsuleContract?</h2>
-        <p>
-            TimeCapsuleContract is a **blockchain-based message vault** that lets users store encrypted messages on Bitcoin Signet.
-            These messages remain locked until a **specific future block height** is reached.
-            Once the unlocking time arrives, the first participant to decode and retrieve the hidden message receives **50% of the collected interaction fees**.
-        </p>
-
-        <h2>💰 Transaction Fees & Payment Details</h2>
-        <p>
-            To store a message in the Bitcoin Time Capsule, you need to pay a small network fee of **0.0001 Signet BTC**.
-            This fee ensures that your message is securely recorded on the blockchain.
-        </p>
-
-        <ul>
-            <li>✅ **Storage Fee:** 0.0001 Signet BTC (paid during transaction).</li>
-            <li>✅ **Total Transaction Cost:** Your network fee + storage fee.</li>
-            <li>✅ **Where the Fee Goes:** 25% is distributed to the first unlocker, 15% to the second, and 10% to the third unlocker. The remaining 40% supports contract operation.</li>
-        </ul>
-
-        <h2>🔄 How the Process Works</h2>
-        <ol>
-            <li><strong>Connect your Bitcoin Signet wallet</strong> (Unisat).</li>
-            <li><strong>Enter a message</strong> → Encrypts locally in your browser.</li>
-            <li><strong>Sign the transaction</strong> inside your wallet.</li>
-            <li><strong>Broadcast the transaction manually</strong> to Bitcoin Signet.</li>
-            <li>🔐 **After 21 days**, the contract unlocks, and users can retrieve the hidden messages.</li>
-            <li>🏆 The first user to unlock the message receives **50% of the fees**.</li>
-        </ol>
-
-        <button id="connectWallet">Connect Wallet (Unisat)</button>
-        <p id="walletStatus">Wallet Status: Not Connected</p>
-
-        <h2>✉ Store Your Message</h2>
-        <textarea id="message" placeholder="Write your message here..."></textarea>
-        <button onclick="encryptMessage()">Encrypt & Generate Transaction</button>
-
-        <h2>🔒 Encrypted Message</h2>
-        <p id="encryptedMessageOutput"></p>
-
-        <h2>📜 Transaction Data</h2>
-        <p id="output"></p>
-
-        <button id="signTransaction" style="display:none;">Sign & Submit</button>
-
-        <p>
-            <strong>Note:</strong> If you see warnings in the browser console related to <code>eternl-dom-script</code>, they are caused by the Eternl wallet extension and do not affect the functionality of this site.
-        </p>
+    <div class="experimental-banner">
+        🧪 EXPERIMENTAL PROJECT: This is a testnet demonstration and should not be used for important messages
     </div>
+
+    <header>
+        <div class="header-content">
+            <h1>Bitcoin Time Capsule</h1>
+            <div class="wallet-section">
+                <button id="connectWallet">Connect Wallet (Unisat)</button>
+                <p id="walletStatus">Wallet Status: Not Connected</p>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="grid-container">
+            <!-- Left Column -->
+            <div class="left-column">
+                <div class="info-card">
+                    <h2>📌 What is TimeCapsuleContract?</h2>
+                    <p>
+                        A blockchain-based message vault that lets users store encrypted messages on Bitcoin Signet.
+                        Messages remain locked until a specific future block height is reached.
+                        Once unlockable, the first three participants to retrieve messages receive portions of the fees.
+                    </p>
+                    
+                    <div class="alert-box">
+                        <h3>🚨 Important: Signet BTC Only!</h3>
+                        <p>
+                            This contract operates on <strong>Bitcoin Signet (testnet)</strong>, not real BTC.
+                            You can request free Signet BTC from the <a href="https://signetfaucet.com/" target="_blank">Bitcoin Signet Faucet</a>.
+                        </p>
+                    </div>
+                    
+                    <h3>🔹 Enable Signet in Your Wallet</h3>
+                    <p>
+                        To interact with the contract, switch your wallet to Signet Mode:<br>
+                        ✅ Unisat Wallet: Go to settings → Select "Network" → Enable Signet.
+                    </p>
+                </div>
+                
+                <div class="info-card">
+                    <h2>💰 Fee Distribution</h2>
+                    <div class="fee-distribution">
+                        <div class="fee-item">
+                            <div class="fee-percentage">30%</div>
+                            <div class="fee-label">First Unlocker</div>
+                        </div>
+                        <div class="fee-item">
+                            <div class="fee-percentage">20%</div>
+                            <div class="fee-label">Second Unlocker</div>
+                        </div>
+                        <div class="fee-item">
+                            <div class="fee-percentage">10%</div>
+                            <div class="fee-label">Third Unlocker</div>
+                        </div>
+                        <div class="fee-item">
+                            <div class="fee-percentage">40%</div>
+                            <div class="fee-label">Contract Support</div>
+                        </div>
+                    </div>
+                    <p class="fee-note">Storage Fee: 0.0001 Signet BTC per message</p>
+                </div>
+            </div>
+            
+            <!-- Right Column -->
+            <div class="right-column">
+                <!-- Block Height Status -->
+                <div class="status-card">
+                    <h2>⏱️ Time Capsule Status</h2>
+                    <div class="block-info">
+                        <div class="block-stat">
+                            <span class="block-label">Current Block:</span>
+                            <span id="currentBlockHeight" class="block-value">Loading...</span>
+                        </div>
+                        <div class="block-stat">
+                            <span class="block-label">Unlock Block:</span>
+                            <span id="unlockBlockHeight" class="block-value">263527</span>
+                        </div>
+                        <div class="block-progress">
+                            <div id="progressBar" class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div id="blockStatus" class="status-indicator pending">
+                        <p>Time Capsule messages will be unlockable in approximately <span id="blocksRemaining">...</span> blocks</p>
+                        <p>Estimated time remaining: <span id="timeRemaining">...</span></p>
+                    </div>
+                </div>
+                
+                <!-- Message Storage Section (hidden until wallet connected) -->
+                <div id="messageSection" class="action-card" style="display: none;">
+                    <h2>✉ Store Your Message</h2>
+                    <textarea id="message" placeholder="Write your message here..."></textarea>
+                    <div class="char-counter"><span id="charCount">0</span>/150 characters (<span id="byteCount">0</span>/80 bytes)</div>
+                    <button onclick="encryptMessage()" class="primary-button">Encrypt & Generate Transaction</button>
+                    
+                    <div id="encryptionResult" style="display: none;">
+                        <h3>🔒 Encrypted Message</h3>
+                        <p id="encryptedMessageOutput" class="code-block"></p>
+                        
+                        <h3>📜 Transaction Data</h3>
+                        <div id="output" class="transaction-details"></div>
+                        
+                        <button id="signTransaction" class="primary-button">Sign & Submit</button>
+                    </div>
+                </div>
+                
+                <!-- Message Retrieval Section -->
+                <div class="action-card">
+                    <h2>🔍 Retrieve Messages</h2>
+                    <div class="tab-container">
+                        <button class="tab-button active" onclick="switchTab('storedTab')">Stored Messages</button>
+                        <button class="tab-button" onclick="switchTab('retrieveTab')">Lookup by ID</button>
+                    </div>
+                    
+                    <div id="storedTab" class="tab-content active">
+                        <div id="storedMessagesList" class="message-list">
+                            <p>Loading stored messages...</p>
+                        </div>
+                    </div>
+                    
+                    <div id="retrieveTab" class="tab-content">
+                        <p>Enter the transaction ID of a message to check its status:</p>
+                        <div class="search-container">
+                            <input type="text" id="txIdInput" placeholder="Transaction ID...">
+                            <button onclick="checkMessage()">Check</button>
+                        </div>
+                        <div id="messageStatus"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <p>Bitcoin Time Capsule Contract | <a href="https://github.com/internetmoneylabs/TimeCapsuleContract" target="_blank">GitHub</a></p>
+        <p class="disclaimer">This is an experimental project on Bitcoin Signet. No real BTC is used.</p>
+    </footer>
 
     <script src="script.js"></script>
 </body>
