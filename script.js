@@ -55,16 +55,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 charCount.style.color = '';
             }
         });
-            
-            // Change color if approaching limit
-            if (this.value.length > 900) {
-                charCount.style.color = '#e74c3c';
-            } else if (this.value.length > 700) {
-                charCount.style.color = '#f39c12';
-            } else {
-                charCount.style.color = '';
-            }
-        });
     }
 });
 
