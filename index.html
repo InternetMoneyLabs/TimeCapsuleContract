@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bitcoin Time Capsule</title>
     <!-- Favicon configuration -->
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    <link rel="manifest" href="site.webmanifest">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
     <link rel="stylesheet" href="styles.css">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' chrome-extension:; style-src 'self' 'unsafe-inline'; connect-src *; img-src 'self' data:;">
 </head>
@@ -99,8 +97,25 @@
                         </div>
                     </div>
                     <div id="blockStatus" class="status-indicator pending">
+                        <div class="countdown-container">
+                            <div class="countdown-item">
+                                <span id="countdownDays" class="countdown-value">--</span>
+                                <span class="countdown-label">Days</span>
+                            </div>
+                            <div class="countdown-item">
+                                <span id="countdownHours" class="countdown-value">--</span>
+                                <span class="countdown-label">Hours</span>
+                            </div>
+                            <div class="countdown-item">
+                                <span id="countdownMinutes" class="countdown-value">--</span>
+                                <span class="countdown-label">Minutes</span>
+                            </div>
+                            <div class="countdown-item">
+                                <span id="countdownSeconds" class="countdown-value">--</span>
+                                <span class="countdown-label">Seconds</span>
+                            </div>
+                        </div>
                         <p>Time Capsule messages will be unlockable in approximately <span id="blocksRemaining">...</span> blocks</p>
-                        <p>Estimated time remaining: <span id="timeRemaining">...</span></p>
                     </div>
                 </div>
                 
@@ -151,6 +166,11 @@
     
     <footer>
         <p>Bitcoin Time Capsule Contract | <a href="https://github.com/internetmoneylabs/TimeCapsuleContract" target="_blank">GitHub</a></p>
+        <div class="donation-section">
+            <p>Support this project:</p>
+            <div class="donation-address">bc1qyetzzylgkyq6rcqx4uu9jyrhzs0ume44t9rfrw</div>
+        </div>
+        <p class="visitor-counter">Visitors: <span id="visitorCount">1</span></p>
         <p class="disclaimer">This is an experimental project on Bitcoin Signet. No real BTC is used.</p>
     </footer>
 

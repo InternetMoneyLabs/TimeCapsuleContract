@@ -458,3 +458,65 @@ body {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: none;
 }
+/* Countdown Styling */
+.countdown-container {
+    display: flex;
+    justify-content: center;
+    margin: 15px 0;
+    gap: 15px;
+}
+
+.countdown-item {
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+    padding: 10px;
+    min-width: 70px;
+}
+
+.countdown-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    display: block;
+}
+
+.countdown-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Visitor Counter */
+.visitor-counter {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    display: inline-block;
+    margin-top: 10px;
+}
+
+/* Donation Section */
+.donation-section {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.donation-address {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    display: inline-block;
+    margin: 5px 0;
+    word-break: break-all;
+}
+
+.donation-qr {
+    max-width: 120px;
+    margin: 10px auto;
+    display: block;
+}

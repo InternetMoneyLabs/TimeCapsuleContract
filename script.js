@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await checkExistingConnection();
     await updateBlockHeightInfo();
     await loadStoredMessages();
+    initVisitorCounter();
     
     // Add character counter for message textarea
     const messageTextarea = document.getElementById('message');
@@ -462,8 +463,13 @@ async function getCurrentBlockHeight() {
 async function updateBlockHeightInfo() {
     const currentBlockHeightElement = document.getElementById("currentBlockHeight");
     const blocksRemainingElement = document.getElementById("blocksRemaining");
-    const timeRemainingElement = document.getElementById("timeRemaining");
     const progressBar = document.getElementById("progressBar");
+    
+    // Countdown elements
+    const countdownDays = document.getElementById("countdownDays");
+    const countdownHours = document.getElementById("countdownHours");
+    const countdownMinutes = document.getElementById("countdownMinutes");
+    const countdownSeconds = document.getElementById("countdownSeconds");
     
     try {
         const currentBlockHeight = await getCurrentBlockHeight();
@@ -483,29 +489,30 @@ async function updateBlockHeightInfo() {
                 progressBar.style.width = `${progressPercentage}%`;
             }
             
-            // Estimate time remaining (10 minutes per block on average)
-            const minutesRemaining = remainingBlocks * 10;
-            if (minutesRemaining <= 0) {
-                timeRemainingElement.innerText = "Messages are now unlockable!";
-                document.getElementById("blockStatus").classList.remove("pending");
-                document.getElementById("blockStatus").classList.add("unlocked");
-            } else {
-                const days = Math.floor(minutesRemaining / (60 * 24));
-                const hours = Math.floor((minutesRemaining % (60 * 24)) / 60);
-                const minutes = minutesRemaining % 60;
-                
-                timeRemainingElement.innerText = `${days} days, ${hours} hours, ${minutes} minutes`;
+            // Update countdown timer
+            updateCountdown(remainingBlocks);
+            
+            // Set interval to update countdown every second
+            if (!window.countdownInterval) {
+                window.countdownInterval = setInterval(() => {
+                    updateCountdown(remainingBlocks);
+                }, 1000);
             }
+            
         } else {
             currentBlockHeightElement.innerText = "Unable to fetch";
             blocksRemainingElement.innerText = "Unknown";
-            timeRemainingElement.innerText = "Unknown";
+            
+            // Set countdown to unknown
+            if (countdownDays) countdownDays.innerText = "--";
+            if (countdownHours) countdownHours.innerText = "--";
+            if (countdownMinutes) countdownMinutes.innerText = "--";
+            if (countdownSeconds) countdownSeconds.innerText = "--";
         }
     } catch (error) {
         console.error("Error updating block height info:", error);
         currentBlockHeightElement.innerText = "Error";
         blocksRemainingElement.innerText = "Error";
-        timeRemainingElement.innerText = "Error";
     }
 }
 
@@ -649,3 +656,111 @@ function checkMessageContent(message) {
     
     return { valid: true };
 }
+// Update countdown timer based on remaining blocks
+function updateCountdown(remainingBlocks) {
+    // Get countdown elements
+    const countdownDays = document.getElementById("countdownDays");
+    const countdownHours = document.getElementById("countdownHours");
+    const countdownMinutes = document.getElementById("countdownMinutes");
+    const countdownSeconds = document.getElementById("countdownSeconds");
+    
+    // If elements don't exist, return
+    if (!countdownDays || !countdownHours || !countdownMinutes || !countdownSeconds) {
+        return;
+    }
+    
+    // Calculate time remaining
+    if (remainingBlocks <= 0) {
+        // If no blocks remaining, set countdown to 0
+        countdownDays.innerText = "0";
+        countdownHours.innerText = "0";
+        countdownMinutes.innerText = "0";
+        countdownSeconds.innerText = "0";
+        
+        // Change status to unlocked
+        const blockStatus = document.getElementById("blockStatus");
+        if (blockStatus) {
+            blockStatus.classList.remove("pending");
+            blockStatus.classList.add("unlocked");
+        }
+        
+        // Clear interval if it exists
+        if (window.countdownInterval) {
+            clearInterval(window.countdownInterval);
+            window.countdownInterval = null;
+        }
+        
+        return;
+    }
+    
+    // Calculate time based on 10 minutes per block on average
+    const totalSeconds = remainingBlocks * 10 * 60;
+    
+    // Get current time
+    const now = new Date();
+    
+    // Calculate target time by adding total seconds to current time
+    const targetTime = new Date(now.getTime() + totalSeconds * 1000);
+    
+    // Calculate difference in milliseconds
+    const diff = targetTime - now;
+    
+    // Calculate days, hours, minutes, seconds
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    // Update countdown elements
+    countdownDays.innerText = days;
+    countdownHours.innerText = hours.toString().padStart(2, '0');
+    countdownMinutes.innerText = minutes.toString().padStart(2, '0');
+    countdownSeconds.innerText = seconds.toString().padStart(2, '0');
+}
+
+// Fetch current block height from mempool.space API
+async function getCurrentBlockHeight() {
+    try {
+        // Using mempool.space API for Signet
+        const response = await fetch('https://mempool.space/signet/api/blocks/tip/height');
+        const blockHeight = await response.text();
+        return parseInt(blockHeight);
+    } catch (error) {
+        console.error("Error fetching block height:", error);
+        return null;
+    }
+}
+
+// Handle visitor counter using localStorage
+function initVisitorCounter() {
+    const visitorCountElement = document.getElementById("visitorCount");
+    if (!visitorCountElement) return;
+    
+    // Try to get visitor count from localStorage
+    let count = localStorage.getItem('visitorCount');
+    
+    // If no count exists, initialize it
+    if (!count) {
+        count = 1;
+    } else {
+        // If user hasn't visited today, increment count
+        const lastVisit = localStorage.getItem('lastVisit');
+        const today = new Date().toDateString();
+        
+        if (lastVisit !== today) {
+            count = parseInt(count) + 1;
+            localStorage.setItem('lastVisit', today);
+        }
+    }
+    
+    // Save count to localStorage
+    localStorage.setItem('visitorCount', count);
+    
+    // Update visitor count element
+    visitorCountElement.innerText = count;
+}
+
+// Initialize visitor counter when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initVisitorCounter();
+});
