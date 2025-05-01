@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await updateBlockHeightInfo();
     await loadStoredMessages();
     initVisitorCounter();
+    setupDonationCopy();
     
     // Add character counter for message textarea
     const messageTextarea = document.getElementById('message');
@@ -58,6 +59,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 });
+
+// Setup donation address copy functionality
+function setupDonationCopy() {
+    const donationAddress = document.getElementById('donationAddress');
+    if (donationAddress) {
+        donationAddress.addEventListener('click', function() {
+            // Get the text content (excluding the SVG icon)
+            const address = this.textContent.trim();
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(address)
+                .then(() => {
+                    // Show confirmation
+                    const confirmation = this.querySelector('.copy-confirmation');
+                    confirmation.classList.add('show');
+                    
+                    // Hide after animation completes
+                    setTimeout(() => {
+                        confirmation.classList.remove('show');
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+        });
+    }
+}
 
 // Tab switching functionality
 function switchTab(tabId) {
@@ -1294,14 +1322,44 @@ function copyDonationAddress() {
         console.error('Failed to copy address: ', err);
     });
 }
-// Detect zoom level changes to enable horizontal scrolling when zoomed
-window.addEventListener('resize', function() {
-    // Check if the page is zoomed
-    const isZoomed = Math.abs(window.devicePixelRatio - 1) > 0.1;
-    
-    if (isZoomed) {
-        document.body.classList.add('zoomed');
-    } else {
-        document.body.classList.remove('zoomed');
-    }
+// Mobile fix for wallet connection and scrolling issues
+document.addEventListener('DOMContentLoaded', function() {
+    // Force check for wallet connection elements
+    setTimeout(function() {
+        const connectWalletBtn = document.getElementById('connectWallet');
+        if (connectWalletBtn) {
+            // Re-attach event listener
+            connectWalletBtn.addEventListener('click', function() {
+                if (walletConnected) {
+                    disconnectWallet();
+                } else {
+                    showWalletSelectionModal();
+                }
+            });
+            console.log("Wallet connect button re-initialized");
+        } else {
+            console.warn("Wallet connect button not found");
+        }
+        
+        // Ensure the page is scrollable
+        document.body.style.height = 'auto';
+        document.body.style.overflow = 'auto';
+        
+        // Check if footer is in viewport
+        const footer = document.querySelector('footer');
+        if (footer) {
+            // Calculate if footer is visible
+            const rect = footer.getBoundingClientRect();
+            const isVisible = rect.top <= window.innerHeight;
+            
+            if (!isVisible) {
+                console.warn("Footer may not be visible, adjusting page height");
+                // Add extra space to ensure scrollability
+                const extraSpace = document.createElement('div');
+                extraSpace.style.height = '100px';
+                extraSpace.style.width = '100%';
+                document.body.appendChild(extraSpace);
+            }
+        }
+    }, 1000);
 });

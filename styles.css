@@ -20,22 +20,6 @@
     padding: 0;
 }
 
-html {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
-}
-
-html::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
-}
-
-html, body {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto; /* Allow horizontal scrolling when zoomed */
-    -webkit-overflow-scrolling: touch; /* For smooth scrolling on iOS */
-}
-
 body {
     font-family: 'Arial', sans-serif;
     background-color: var(--background-dark);
@@ -46,8 +30,6 @@ body {
     overflow-y: scroll; /* Always show vertical scrollbar to prevent layout shifts */
     -webkit-overflow-scrolling: auto; /* Disable elastic scrolling on iOS */
     overscroll-behavior: none; /* Prevent bouncing effect */
-    width: 100%;
-    position: relative;
 }
 
 /* Experimental Banner */
@@ -55,31 +37,23 @@ body {
     background-color: var(--warning-color);
     color: #000;
     text-align: center;
-    padding: 8px 15px;
+    padding: 8px;
     font-weight: bold;
     position: sticky;
     top: 0;
     z-index: 1000;
-    width: 100%;
-    left: 0;
-    right: 0;
-    box-sizing: border-box;
 }
 
 /* Header */
 header {
     background-color: rgba(30, 30, 30, 0.95);
-    padding: 15px;
+    padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
     position: sticky;
     top: 36px;
     z-index: 100;
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
-    width: 100%;
-    left: 0;
-    right: 0;
-    box-sizing: border-box;
 }
 
 .header-content {
@@ -88,8 +62,6 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
-    box-sizing: border-box;
 }
 
 h1 {
@@ -101,17 +73,14 @@ h1 {
 main {
     max-width: 1200px;
     margin: 20px auto;
-    padding: 0 15px;
-    width: 100%;
-    box-sizing: border-box;
+    padding: 0 20px;
+    flex: 1;
 }
 
 .grid-container {
     display: grid;
     grid-template-columns: 1fr 1.5fr;
     gap: 20px;
-    width: 100%;
-    box-sizing: border-box;
 }
 
 /* Cards */
@@ -121,8 +90,6 @@ main {
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    box-sizing: border-box;
 }
 
 /* Alert Box */
@@ -395,7 +362,8 @@ footer {
     padding: 20px;
     background-color: var(--card-background);
     border-top: 1px solid var(--border-color);
-    margin-top: 40px;
+    margin-top: auto;
+    width: 100%;
 }
 
 footer p {
@@ -413,84 +381,21 @@ footer p {
 @media (max-width: 900px) {
     .grid-container {
         grid-template-columns: 1fr;
-        gap: 15px;
-        width: 100%;
     }
     
     .header-content {
         flex-direction: column;
         align-items: center;
         text-align: center;
-        width: 100%;
-        padding: 0 10px;
-        box-sizing: border-box;
     }
     
     .wallet-section {
         margin-top: 15px;
         align-items: center;
-        width: 100%;
     }
     
     h1 {
         margin-bottom: 10px;
-        font-size: 1.5rem;
-    }
-    
-    /* Adjust countdown for mobile */
-    .countdown-container {
-        gap: 8px;
-    }
-    
-    .countdown-item {
-        min-width: 60px;
-        padding: 8px 5px;
-    }
-    
-    .countdown-value {
-        font-size: 1.5rem;
-    }
-    
-    /* Make buttons and text fit on mobile */
-    button, .primary-button {
-        padding: 10px;
-        font-size: 0.95rem;
-        white-space: normal;
-        word-wrap: break-word;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    
-    /* Adjust card padding */
-    .info-card, .action-card, .status-card {
-        padding: 15px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    
-    /* Make text responsive */
-    p, li, .block-label, .block-value {
-        font-size: 0.95rem;
-        word-wrap: break-word;
-    }
-    
-    /* Ensure left and right columns have consistent width */
-    .left-column, .right-column {
-        width: 100%;
-        padding: 0;
-        box-sizing: border-box;
-    }
-    
-    /* Ensure text wraps properly */
-    h2, h3, p {
-        width: 100%;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-    }
-    
-    /* Adjust alert box for mobile */
-    .alert-box {
-        padding: 10px;
     }
 }
 
@@ -511,87 +416,16 @@ footer p {
     
     .search-container {
         flex-direction: column;
-        width: 100%;
     }
     
     #txIdInput {
         border-radius: 5px;
         margin-bottom: 10px;
-        width: 100%;
-        box-sizing: border-box;
     }
     
     .search-container button {
         border-radius: 5px;
         width: 100%;
-    }
-    
-    /* Further reduce font sizes */
-    h2 {
-        font-size: 1.3rem;
-    }
-    
-    h3 {
-        font-size: 1.1rem;
-    }
-    
-    .countdown-item {
-        min-width: 50px;
-        padding: 5px;
-    }
-    
-    .countdown-value {
-        font-size: 1.2rem;
-    }
-    
-    .countdown-label {
-        font-size: 0.7rem;
-    }
-    
-    /* Adjust wallet modal for small screens */
-    .wallet-options {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-    
-    .wallet-option {
-        padding: 12px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    
-    /* Ensure all content fits within viewport */
-    .modal-body {
-        padding: 15px;
-        font-size: 0.9rem;
-    }
-    
-    /* Ensure text doesn't overflow */
-    * {
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-    }
-    
-    /* Adjust textarea for mobile */
-    textarea {
-        height: 100px;
-    }
-    
-    /* Center countdown */
-    .countdown-container {
-        justify-content: center;
-        width: 100%;
-    }
-    
-    /* Adjust padding for small screens */
-    main {
-        padding: 0 10px;
-    }
-    
-    /* Ensure inline icon doesn't break layout */
-    .inline-icon {
-        height: 24px;
-        vertical-align: middle;
     }
 }
 /* Inline Icon */
@@ -617,12 +451,14 @@ a:hover {
 /* Prevent elastic scrolling and bouncing effects */
 html {
     height: 100%;
-    overflow: hidden;
+    overflow: visible;
 }
 
 body {
-    height: 100%;
-    overflow-y: auto;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: none;
 }
@@ -670,6 +506,7 @@ body {
 .donation-section {
     margin-top: 15px;
     text-align: center;
+    position: relative;
 }
 
 .donation-address {
@@ -682,23 +519,65 @@ body {
     margin: 5px 0;
     word-break: break-all;
     position: relative;
+    padding-right: 35px;
+    cursor: pointer;
 }
 
 .copy-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
     cursor: pointer;
-    margin-left: 5px;
-    opacity: 0.7;
-    transition: opacity 0.3s, color 0.3s;
-    vertical-align: middle;
-    display: inline-flex;
+    color: var(--text-secondary);
+    transition: color 0.2s;
+    width: 18px;
+    height: 18px;
 }
 
 .copy-icon:hover {
-    opacity: 1;
+    color: var(--primary-color);
 }
 
-.copy-icon.copied {
-    color: var(--success-color);
+.copy-confirmation {
+    position: absolute;
+    background-color: var(--success-color);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    z-index: 100;
+}
+
+.copy-confirmation:after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--success-color) transparent transparent transparent;
+}
+
+.copy-confirmation.show {
+    opacity: 1;
+    visibility: visible;
+    animation: fadeInOut 2s forwards;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { opacity: 0; visibility: hidden; }
 }
 
 .donation-qr {
@@ -926,124 +805,4 @@ body {
 .modal-close:hover {
     background-color: rgba(255, 255, 255, 0.1);
     color: var(--text-color);
-}
-.left-column, .right-column {
-    width: 100%;
-    box-sizing: border-box;
-}
-/* Copy notification */
-.copy-notification {
-    position: absolute;
-    background-color: var(--success-color);
-    color: white;
-    font-size: 0.8rem;
-    padding: 3px 8px;
-    border-radius: 0; /* Square corners instead of rounded */
-    top: -25px;
-    right: 10px;
-    opacity: 0;
-    transform: translateY(0) scale(0.8);
-    transition: opacity 0.3s, transform 0.3s;
-    pointer-events: none;
-}
-
-.copy-notification:after {
-    content: '';
-    position: absolute;
-    bottom: -5px;
-    right: 10px;
-    width: 0;
-    height: 0;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 5px solid var(--success-color);
-}
-
-.copy-notification.show {
-    opacity: 1;
-    transform: translateY(-5px) scale(1);
-}
-
-/* Ensure donation address has position relative for absolute positioning of notification */
-.donation-address {
-    position: relative;
-}
-/* Additional responsive fixes for smaller screens */
-@media (max-width: 576px) {
-  /* Make grid container truly fluid */
-  .grid-container {
-    width: 100%;
-    padding: 0 10px;
-    box-sizing: border-box;
-  }
-  
-  /* Ensure cards take up full width of their container */
-  .info-card, .action-card, .status-card {
-    width: 100%;
-    margin-left: 0;
-    margin-right: 0;
-  }
-  
-  /* Adjust main content padding */
-  main {
-    padding: 0 10px;
-  }
-  
-  /* Ensure all content is properly centered */
-  .header-content, .left-column, .right-column {
-    width: 100%;
-    padding: 0;
-  }
-  
-  /* Allow horizontal scrolling when zoomed */
-  body.zoomed {
-    overflow-x: auto;
-  }
-}
-
-/* iPhone-specific adjustments */
-@media (max-width: 414px) {
-  /* Further reduce padding for very small screens */
-  main {
-    padding: 0 8px;
-  }
-  
-  .grid-container {
-    padding: 0 8px;
-  }
-  
-  /* Ensure text doesn't overflow */
-  h2, h3 {
-    font-size: 1.1rem;
-    word-wrap: break-word;
-  }
-  
-  /* Adjust countdown for very small screens */
-  .countdown-item {
-    min-width: 45px;
-    padding: 4px;
-  }
-  
-  /* Make sure all elements stay within viewport */
-  * {
-    max-width: 100%;
-  }
-}
-/* Ensure content is accessible when zoomed */
-@media (min-resolution: 1.1dppx) {
-    body {
-        overflow-x: auto !important;
-    }
-    
-    .grid-container, main, .info-card, .action-card, .status-card {
-        max-width: none;
-        width: auto;
-    }
-}
-
-/* Maintain layout when not zoomed */
-@media (max-resolution: 1dppx) {
-    body {
-        overflow-x: hidden;
-    }
 }
