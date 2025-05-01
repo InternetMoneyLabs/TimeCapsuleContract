@@ -11,9 +11,17 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
             const network = await window.unisat.getNetwork();
             console.log("Detected network:", network); // Debugging: Log the network value
 
-            // Normalize the network name for comparison
-            const normalizedNetwork = network.trim().toLowerCase();
-            if (normalizedNetwork !== "signet" && normalizedNetwork !== "bitcoin-signet") {
+            // More robust network detection
+            const normalizedNetwork = network ? network.toString().trim().toLowerCase() : "";
+            console.log("Normalized network:", normalizedNetwork); // Log normalized value for debugging
+            
+            // Check if network is Signet (accepting various possible return formats)
+            if (normalizedNetwork === "signet" || 
+                normalizedNetwork === "bitcoin-signet" || 
+                normalizedNetwork === "2" || // Some wallets use numeric codes
+                normalizedNetwork.includes("signet")) {
+                console.log("Signet network confirmed"); // Log confirmation
+            } else {
                 console.error("Unexpected network value:", network); // Log unexpected network value
                 alert("⚠ You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
                 document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
