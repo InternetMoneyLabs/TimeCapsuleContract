@@ -218,9 +218,9 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
                 
                 // Check again if unisat is now available
                 if (typeof window.unisat === 'undefined') {
-                    showModal("Wallet Not Found", `
-                        <p>Unisat wallet not found! Please install the Unisat browser extension.</p>
-                        <p>If you're using Lockdown Mode, please disable it temporarily to use this application.</p>
+                    showModal("Connection Cancelled", `
+                        <p>You closed the wallet extension without connecting.</p>
+                        <p>If you'd like to use TimeCapsuleContract, please connect your wallet when prompted.</p>
                     `);
                     updateWalletUI(false);
                     return;
@@ -496,12 +496,6 @@ async function updateBlockHeightInfo() {
     const blocksRemainingElement = document.getElementById("blocksRemaining");
     const progressBar = document.getElementById("progressBar");
     
-    // Countdown elements
-    const countdownDays = document.getElementById("countdownDays");
-    const countdownHours = document.getElementById("countdownHours");
-    const countdownMinutes = document.getElementById("countdownMinutes");
-    const countdownSeconds = document.getElementById("countdownSeconds");
-    
     try {
         const currentBlockHeight = await getCurrentBlockHeight();
         if (currentBlockHeight) {
@@ -523,18 +517,16 @@ async function updateBlockHeightInfo() {
             // Update countdown timer
             updateCountdown(remainingBlocks);
             
-            // Set interval to update countdown every second
-            if (!window.countdownInterval) {
-                window.countdownInterval = setInterval(() => {
-                    updateCountdown(remainingBlocks);
-                }, 1000);
-            }
-            
         } else {
             currentBlockHeightElement.innerText = "Unable to fetch";
             blocksRemainingElement.innerText = "Unknown";
             
             // Set countdown to unknown
+            const countdownDays = document.getElementById("countdownDays");
+            const countdownHours = document.getElementById("countdownHours");
+            const countdownMinutes = document.getElementById("countdownMinutes");
+            const countdownSeconds = document.getElementById("countdownSeconds");
+            
             if (countdownDays) countdownDays.innerText = "--";
             if (countdownHours) countdownHours.innerText = "--";
             if (countdownMinutes) countdownMinutes.innerText = "--";
@@ -545,6 +537,9 @@ async function updateBlockHeightInfo() {
         currentBlockHeightElement.innerText = "Error";
         blocksRemainingElement.innerText = "Error";
     }
+    
+    // Schedule next update in 5 minutes
+    setTimeout(updateBlockHeightInfo, 5 * 60 * 1000);
 }
 
 // Load sample stored messages (in a real implementation, these would come from an API)
@@ -670,6 +665,17 @@ function checkMessageContent(message) {
         "nigger", "faggot", "retard", "idiot", "stupid", "dumb", "moron"
     ];
     
+    // Solicitation and scam-related terms
+    const solicitationList = [
+        "buy now", "limited offer", "special deal", "discount", "sale", "offer", 
+        "investment", "opportunity", "earn money", "make money", "get rich", 
+        "passive income", "join now", "sign up", "subscribe", "free money", 
+        "guaranteed", "double your", "triple your", "contact me", "dm me", 
+        "direct message", "telegram", "whatsapp", "signal", "discord", "click here",
+        "link in bio", "check out", "promotion", "promo", "giveaway", "airdrop",
+        "token", "ico", "presale", "pre-sale", "whitelist", "white-list"
+    ];
+    
     // Convert to lowercase for case-insensitive matching
     const lowerMessage = message.toLowerCase();
     
@@ -681,6 +687,16 @@ function checkMessageContent(message) {
             return {
                 valid: false,
                 reason: "Your message contains inappropriate language. Please edit your message to continue."
+            };
+        }
+    }
+    
+    // Check for solicitation terms
+    for (const term of solicitationList) {
+        if (lowerMessage.includes(term)) {
+            return {
+                valid: false,
+                reason: "Your message appears to contain solicitation or promotional content, which is not allowed. Please edit your message to continue."
             };
         }
     }
@@ -704,9 +720,9 @@ function updateCountdown(remainingBlocks) {
     if (remainingBlocks <= 0) {
         // If no blocks remaining, set countdown to 0
         countdownDays.innerText = "0";
-        countdownHours.innerText = "0";
-        countdownMinutes.innerText = "0";
-        countdownSeconds.innerText = "0";
+        countdownHours.innerText = "00";
+        countdownMinutes.innerText = "00";
+        countdownSeconds.innerText = "00";
         
         // Change status to unlocked
         const blockStatus = document.getElementById("blockStatus");
@@ -727,26 +743,58 @@ function updateCountdown(remainingBlocks) {
     // Calculate time based on 10 minutes per block on average
     const totalSeconds = remainingBlocks * 10 * 60;
     
-    // Get current time
-    const now = new Date();
+    // Set the target time once and store it
+    if (!window.targetTime) {
+        // Get current time
+        const now = new Date();
+        
+        // Calculate target time by adding total seconds to current time
+        window.targetTime = new Date(now.getTime() + totalSeconds * 1000);
+    }
     
-    // Calculate target time by adding total seconds to current time
-    const targetTime = new Date(now.getTime() + totalSeconds * 1000);
+    // Function to update the countdown display
+    function updateDisplay() {
+        // Get current time
+        const now = new Date();
+        
+        // Calculate difference in milliseconds
+        const diff = window.targetTime - now;
+        
+        if (diff <= 0) {
+            // Time's up
+            countdownDays.innerText = "0";
+            countdownHours.innerText = "00";
+            countdownMinutes.innerText = "00";
+            countdownSeconds.innerText = "00";
+            
+            if (window.countdownInterval) {
+                clearInterval(window.countdownInterval);
+                window.countdownInterval = null;
+            }
+            return;
+        }
+        
+        // Calculate days, hours, minutes, seconds
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        // Update countdown elements
+        countdownDays.innerText = days;
+        countdownHours.innerText = hours.toString().padStart(2, '0');
+        countdownMinutes.innerText = minutes.toString().padStart(2, '0');
+        countdownSeconds.innerText = seconds.toString().padStart(2, '0');
+    }
     
-    // Calculate difference in milliseconds
-    const diff = targetTime - now;
+    // Update immediately
+    updateDisplay();
     
-    // Calculate days, hours, minutes, seconds
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-    
-    // Update countdown elements
-    countdownDays.innerText = days;
-    countdownHours.innerText = hours.toString().padStart(2, '0');
-    countdownMinutes.innerText = minutes.toString().padStart(2, '0');
-    countdownSeconds.innerText = seconds.toString().padStart(2, '0');
+    // Set interval to update every second
+    if (window.countdownInterval) {
+        clearInterval(window.countdownInterval);
+    }
+    window.countdownInterval = setInterval(updateDisplay, 1000);
 }
 
 // Fetch current block height from mempool.space API
@@ -941,7 +989,10 @@ async function connectWallet(walletType) {
         
     } catch (error) {
         console.error(`Error connecting to ${walletType} wallet:`, error);
-        showModal("Connection Error", `<p>Failed to connect to ${walletType} wallet: ${error.message}</p>`);
+        showModal("Connection Cancelled", `
+            <p>You closed the wallet extension without connecting.</p>
+            <p>If you'd like to use TimeCapsuleContract, please connect your wallet when prompted.</p>
+        `);
     }
 }
 
@@ -969,7 +1020,7 @@ async function connectUnisatWallet() {
             
             // Check again if unisat is now available
             if (typeof window.unisat === 'undefined') {
-                throw new Error("Unisat wallet not found. Please install the Unisat browser extension.");
+                throw new Error("Connection cancelled. You closed the wallet extension without connecting.");
             }
         }
     }
@@ -989,7 +1040,7 @@ async function connectUnisatWallet() {
             accounts = await window.unisat.enable();
         } catch (altError) {
             console.error("Alternative connection also failed:", altError);
-            throw new Error("Could not connect to Unisat wallet.");
+            throw new Error("Connection cancelled. You closed the wallet extension without connecting.");
         }
     }
     
@@ -1210,5 +1261,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p>By using this application, you acknowledge its experimental nature and understand that it should not be used for storing sensitive or important information.</p>
             `);
         });
+    }
+});
+// Function to copy donation address
+function copyDonationAddress() {
+    const address = "bc1qyetzzylgkyq6rcqx4uu9jyrhzs0ume44t9rfrw";
+    navigator.clipboard.writeText(address).then(() => {
+        // Create a temporary "Copied" notification
+        const notification = document.createElement('div');
+        notification.className = 'copy-notification';
+        notification.textContent = 'Copied';
+        
+        // Add it near the donation address
+        const donationAddress = document.querySelector('.donation-address');
+        donationAddress.appendChild(notification);
+        
+        // Trigger the animation
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+        
+        // Remove after animation completes
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    donationAddress.removeChild(notification);
+                }
+            }, 300); // Wait for fade out animation
+        }, 1200);
+    }).catch(err => {
+        console.error('Failed to copy address: ', err);
+    });
+}
+// Detect zoom level changes to enable horizontal scrolling when zoomed
+window.addEventListener('resize', function() {
+    // Check if the page is zoomed
+    const isZoomed = Math.abs(window.devicePixelRatio - 1) > 0.1;
+    
+    if (isZoomed) {
+        document.body.classList.add('zoomed');
+    } else {
+        document.body.classList.remove('zoomed');
     }
 });
