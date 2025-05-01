@@ -1,134 +1,76 @@
-document.getElementById("connectWallet").addEventListener("click", async () => {
-    if (!window.unisat) {
-        alert("Unisat wallet not found! Please install the Unisat browser extension.");
-        document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
-        return;
-    }
-
-    try {
-        console.log("Unisat Wallet detected.");
-
-        // First, check if connected to wallet
-        let connected = false;
-        try {
-            const accounts = await window.unisat.getAccounts();
-            connected = accounts && accounts.length > 0;
-            console.log("Already connected:", connected);
-        } catch (e) {
-            console.log("Not connected yet");
+// Wait for UniSat wallet to be available
+function waitForUnisat(timeout = 3000) {
+    return new Promise((resolve) => {
+        if (window.unisat) {
+            return resolve(window.unisat);
         }
-
-        // Connect if not already connected
-        if (!connected) {
-            console.log("Requesting accounts...");
-            const accounts = await window.unisat.requestAccounts();
-            console.log("Connected accounts:", accounts);
-            
-            if (!accounts || accounts.length === 0) {
-                alert("No accounts found in Unisat Wallet. Please ensure you are logged in.");
-                document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
-                return;
+        
+        let timer = null;
+        const interval = setInterval(() => {
+            if (window.unisat) {
+                clearInterval(interval);
+                clearTimeout(timer);
+                return resolve(window.unisat);
             }
+        }, 100);
+        
+        timer = setTimeout(() => {
+            clearInterval(interval);
+            return resolve(null);
+        }, timeout);
+    });
+}
+
+// Connect wallet button handler
+document.getElementById("connectWallet").addEventListener("click", async () => {
+    try {
+        // Wait for UniSat to be available
+        const unisat = await waitForUnisat();
+        if (!unisat) {
+            alert("Unisat wallet not found! Please install the Unisat browser extension.");
+            document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
+            return;
         }
-
+        
+        console.log("Unisat detected:", unisat.version || "version unknown");
+        
+        // Request connection to wallet
+        const accounts = await unisat.requestAccounts();
+        console.log("Connected accounts:", accounts);
+        
+        if (!accounts || accounts.length === 0) {
+            alert("No accounts found in Unisat Wallet. Please ensure you are logged in.");
+            document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
+            return;
+        }
+        
         // Get network information
-        const networkInfo = await getNetworkInfo();
-        console.log("Network info:", networkInfo);
-
-        if (!networkInfo.isSignet) {
+        const network = await unisat.getNetwork();
+        console.log("Network:", network);
+        
+        // Check if on Signet - accept any value that contains "signet" (case insensitive)
+        // UniSat's own site uses a simple string comparison
+        const networkStr = String(network).toLowerCase();
+        const isSignet = networkStr.includes("signet");
+        
+        console.log("Is Signet:", isSignet, "Network value:", network);
+        
+        if (!isSignet) {
             alert("⚠ You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
             document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
             return;
         }
-
-        // Get the account address
-        const accounts = await window.unisat.getAccounts();
+        
+        // Successfully connected to Signet
         document.getElementById("walletStatus").innerText = `Connected to Signet: ${accounts[0]}`;
         console.log("Wallet connected successfully to Signet.");
-
+        
     } catch (error) {
         console.error("Error connecting to Unisat Wallet:", error);
         alert("Error connecting to Unisat Wallet: " + error.message);
         document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
     }
 });
-
-// Separate function to get network information
-async function getNetworkInfo() {
-    try {
-        // Try multiple methods to determine if we're on Signet
-        let isSignet = false;
-        let networkValue = null;
-        
-        // Method 1: Direct getNetwork call
-        try {
-            networkValue = await window.unisat.getNetwork();
-            console.log("Method 1 - getNetwork result:", networkValue);
-        } catch (e) {
-            console.log("Method 1 failed:", e);
-        }
-        
-        // Method 2: Check if we can get a Signet address
-        let signetAddress = null;
-        try {
-            signetAddress = await window.unisat.getAddress();
-            console.log("Method 2 - Got address:", signetAddress);
-        } catch (e) {
-            console.log("Method 2 failed:", e);
-        }
-        
-        // Method 3: Check network properties
-        let networkProperties = null;
-        try {
-            if (window.unisat.bitcoinNetwork) {
-                networkProperties = window.unisat.bitcoinNetwork;
-            }
-            console.log("Method 3 - Network properties:", networkProperties);
-        } catch (e) {
-            console.log("Method 3 failed:", e);
-        }
-        
-        // Determine if we're on Signet based on all available information
-        if (networkValue) {
-            if (typeof networkValue === 'string') {
-                isSignet = networkValue.toLowerCase().includes('signet');
-            } else if (typeof networkValue === 'number') {
-                isSignet = networkValue === 2;
-            } else {
-                isSignet = String(networkValue).toLowerCase().includes('signet');
-            }
-        }
-        
-        // If we have a Signet address, that's a good sign
-        if (signetAddress && !isSignet) {
-            // Additional check: Signet addresses often start with specific prefixes
-            // This is a heuristic and may need adjustment
-            isSignet = true;
-        }
-        
-        // If we have network properties that indicate Signet
-        if (networkProperties && !isSignet) {
-            if (typeof networkProperties === 'string') {
-                isSignet = networkProperties.toLowerCase().includes('signet');
-            } else if (networkProperties.name) {
-                isSignet = networkProperties.name.toLowerCase().includes('signet');
-            }
-        }
-        
-        // TEMPORARY: Force accept for testing
-        // isSignet = true;
-        
-        return {
-            isSignet,
-            networkValue,
-            signetAddress,
-            networkProperties
-        };
-    } catch (error) {
-        console.error("Error getting network info:", error);
-        return { isSignet: false, error };
-    }
-}
 
 // Function to encrypt messages locally in the browser
 function encryptMessage() {
