@@ -218,7 +218,10 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
                 
                 // Check again if unisat is now available
                 if (typeof window.unisat === 'undefined') {
-                    alert("Unisat wallet not found! Please install the Unisat browser extension or disable Lockdown Mode if you're using it.");
+                    showModal("Wallet Not Found", `
+                        <p>Unisat wallet not found! Please install the Unisat browser extension.</p>
+                        <p>If you're using Lockdown Mode, please disable it temporarily to use this application.</p>
+                    `);
                     updateWalletUI(false);
                     return;
                 }
@@ -240,14 +243,18 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
                 accounts = await window.unisat.enable();
             } catch (altError) {
                 console.error("Alternative connection also failed:", altError);
-                throw new Error("Could not connect to wallet. Please check if Lockdown Mode is enabled and disable it if necessary.");
+                showModal("Connection Error", `
+                    <p>Could not connect to wallet. Please check if Lockdown Mode is enabled and disable it if necessary.</p>
+                    <p>Error details: ${connectionError.message || "Unknown error"}</p>
+                `);
+                throw new Error("Could not connect to wallet.");
             }
         }
         
         console.log("Connected accounts:", accounts);
         
         if (!accounts || accounts.length === 0) {
-            alert("No accounts found in Unisat Wallet. Please ensure you are logged in.");
+            showModal("No Accounts Found", "<p>No accounts found in Unisat Wallet. Please ensure you are logged in.</p>");
             updateWalletUI(false);
             return;
         }
@@ -286,7 +293,11 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
         console.log("Final network determination:", isSignetOrTestnet, "Network value:", network, "Address:", address);
         
         if (!isSignetOrTestnet) {
-            alert("⚠ You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
+            showModal("Wrong Network", `
+                <p>⚠ You are NOT on Bitcoin Signet!</p>
+                <p>Please switch your wallet network to Signet and try again.</p>
+                <p>In Unisat Wallet, click the network selector and choose "Bitcoin Testnet, Signet".</p>
+            `);
             updateWalletUI(false);
             return;
         }
@@ -298,7 +309,10 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
         
     } catch (error) {
         console.error("Error connecting to Unisat Wallet:", error);
-        alert("Error connecting to Unisat Wallet: " + error.message + "\n\nIf you're using Lockdown Mode, please disable it temporarily to use this application.");
+        showModal("Connection Error", `
+            <p>Error connecting to Unisat Wallet: ${error.message}</p>
+            <p>If you're using Lockdown Mode, please disable it temporarily to use this application.</p>
+        `);
         updateWalletUI(false);
     }
 });
@@ -307,27 +321,44 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
 function encryptMessage() {
     const message = document.getElementById("message").value;
     if (!message) {
-        alert("Please enter a message to encrypt.");
+        showModal("Empty Message", "<p>Please enter a message to encrypt.</p>");
+        return;
+    }
+    
+    // Check for unsupported characters/languages
+    if (containsUnsupportedCharacters(message)) {
+        const languagesList = getSupportedLanguages().map(lang => 
+            `<div class="language-item">${lang}</div>`
+        ).join('');
+        
+        showModal("Unsupported Language", `
+            <p>Your message contains characters from an unsupported language. Currently, only Latin-based alphabets are supported.</p>
+            <p>Supported languages include:</p>
+            <div class="language-list">
+                ${languagesList}
+            </div>
+            <p>Please modify your message to use only supported characters.</p>
+        `);
         return;
     }
     
     // Check message length (reasonable limit for blockchain storage)
     if (message.length > 150) {
-        alert("Message is too long. Please limit your message to 150 characters to ensure it can be stored on the blockchain.");
+        showModal("Message Too Long", "<p>Message is too long. Please limit your message to 150 characters to ensure it can be stored on the blockchain.</p>");
         return;
     }
     
     // Check message byte size
     const sizeInfo = calculateMessageBytes(message);
     if (!sizeInfo.withinLimit) {
-        alert(`Your message is ${sizeInfo.base64Size} bytes after encoding, which exceeds the 80-byte OP_RETURN limit. Please shorten your message or use fewer special characters.`);
+        showModal("Message Too Large", `<p>Your message is ${sizeInfo.base64Size} bytes after encoding, which exceeds the 80-byte OP_RETURN limit. Please shorten your message or use fewer special characters.</p>`);
         return;
     }
     
     // Check for inappropriate content
     const contentCheck = checkMessageContent(message);
     if (!contentCheck.valid) {
-        alert(contentCheck.reason);
+        showModal("Inappropriate Content", `<p>${contentCheck.reason}</p>`);
         return;
     }
 
@@ -361,26 +392,26 @@ function encryptMessage() {
         
     } catch (error) {
         console.error("Error encrypting message:", error);
-        alert("Failed to encrypt the message. Please try again.");
+        showModal("Encryption Error", "<p>Failed to encrypt the message. Please try again.</p>");
     }
 }
 
 // Sign and submit transaction
 document.getElementById("signTransaction").addEventListener("click", async () => {
     if (!walletConnected || !currentAccount) {
-        alert("Wallet not connected! Please connect your wallet first.");
+        showModal("Wallet Not Connected", "<p>Wallet not connected! Please connect your wallet first.</p>");
         return;
     }
     
     if (!window.txData) {
-        alert("No transaction data found. Please encrypt a message first.");
+        showModal("No Transaction Data", "<p>No transaction data found. Please encrypt a message first.</p>");
         return;
     }
     
     try {
         const unisat = await waitForUnisat();
         if (!unisat) {
-            alert("Unisat wallet not found! Please install the Unisat browser extension.");
+            showModal("Wallet Not Found", "<p>Unisat wallet not found! Please install the Unisat browser extension.</p>");
             return;
         }
         
@@ -417,7 +448,7 @@ document.getElementById("signTransaction").addEventListener("click", async () =>
     } catch (error) {
         console.error("Error sending transaction:", error);
         document.getElementById("output").innerHTML += `<br><br>❌ Error sending transaction: ${error.message}`;
-        alert("Failed to send transaction: " + error.message);
+        showModal("Transaction Error", `<p>Failed to send transaction: ${error.message}</p>`);
     }
 });
 
@@ -763,4 +794,421 @@ function initVisitorCounter() {
 // Initialize visitor counter when page loads
 document.addEventListener('DOMContentLoaded', function() {
     initVisitorCounter();
+});
+// Modal popup system
+function showModal(title, content) {
+    // Set modal content
+    document.getElementById('modalTitle').innerText = title;
+    document.getElementById('modalBody').innerHTML = content;
+    
+    // Show modal
+    const modalOverlay = document.getElementById('modalOverlay');
+    modalOverlay.classList.add('active');
+    
+    // Set up event listeners for closing
+    document.getElementById('modalClose').onclick = closeModal;
+    document.getElementById('modalOk').onclick = closeModal;
+    
+    // Also close when clicking outside the modal
+    modalOverlay.onclick = function(event) {
+        if (event.target === modalOverlay) {
+            closeModal();
+        }
+    };
+    
+    // Prevent scrolling on the body
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    // Hide modal
+    document.getElementById('modalOverlay').classList.remove('active');
+    
+    // Re-enable scrolling
+    document.body.style.overflow = '';
+}
+
+// Check if a string contains unsupported characters
+function containsUnsupportedCharacters(text) {
+    // Define a regex pattern for supported characters (Latin, numbers, common symbols)
+    const supportedPattern = /^[A-Za-z0-9\s.,!?@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/;
+    
+    // If the text doesn't match the supported pattern, it contains unsupported characters
+    return !supportedPattern.test(text);
+}
+
+// Get list of supported languages
+function getSupportedLanguages() {
+    return [
+        "English",
+        "Spanish",
+        "French",
+        "German",
+        "Italian",
+        "Portuguese",
+        "Dutch",
+        "Swedish",
+        "Norwegian",
+        "Danish",
+        "Finnish",
+        "Icelandic",
+        "Greek (Latin script)",
+        "Turkish (Latin script)",
+        "Polish",
+        "Czech",
+        "Slovak",
+        "Hungarian",
+        "Romanian",
+        "Croatian",
+        "Serbian (Latin script)",
+        "Slovenian",
+        "Albanian",
+        "Estonian",
+        "Latvian",
+        "Lithuanian"
+    ];
+}
+
+// Initialize modal system
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure modal elements exist
+    if (!document.getElementById('modalOverlay')) {
+        console.error("Modal elements not found in the DOM");
+    }
+});
+// Wallet connection system
+let currentWalletType = null;
+
+// Show wallet selection modal
+function showWalletSelectionModal() {
+    const walletModal = document.getElementById('walletSelectionModal');
+    walletModal.classList.add('active');
+    
+    // Set up event listeners
+    document.getElementById('walletModalClose').onclick = closeWalletModal;
+    
+    // Close when clicking outside
+    walletModal.onclick = function(event) {
+        if (event.target === walletModal) {
+            closeWalletModal();
+        }
+    };
+    
+    // Set up wallet option buttons
+    const walletOptions = document.querySelectorAll('.wallet-option');
+    walletOptions.forEach(option => {
+        option.onclick = function() {
+            const walletType = this.getAttribute('data-wallet');
+            connectWallet(walletType);
+            closeWalletModal();
+        };
+    });
+    
+    // Prevent scrolling on the body
+    document.body.style.overflow = 'hidden';
+}
+
+// Close wallet selection modal
+function closeWalletModal() {
+    document.getElementById('walletSelectionModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Connect to selected wallet
+async function connectWallet(walletType) {
+    console.log(`Attempting to connect to ${walletType} wallet...`);
+    
+    try {
+        switch(walletType) {
+            case 'unisat':
+                await connectUnisatWallet();
+                break;
+            case 'xverse':
+                await connectXverseWallet();
+                break;
+            case 'okx':
+                await connectOKXWallet();
+                break;
+            case 'leather':
+                await connectLeatherWallet();
+                break;
+            default:
+                throw new Error(`Unsupported wallet type: ${walletType}`);
+        }
+        
+        // If connection was successful, store the wallet type
+        currentWalletType = walletType;
+        
+    } catch (error) {
+        console.error(`Error connecting to ${walletType} wallet:`, error);
+        showModal("Connection Error", `<p>Failed to connect to ${walletType} wallet: ${error.message}</p>`);
+    }
+}
+
+// Connect to Unisat wallet
+async function connectUnisatWallet() {
+    // Check if unisat is defined in window object
+    if (typeof window.unisat === 'undefined') {
+        console.log("Unisat not found in window object.");
+        
+        // Try to detect wallet through alternative methods
+        if (window.bitcoin || window.BitcoinProvider) {
+            console.log("Alternative Bitcoin provider detected");
+            // Use alternative provider if available
+            window.unisat = window.bitcoin || window.BitcoinProvider;
+        } else {
+            // Create a direct request to open the extension
+            console.log("No wallet detected. Attempting to trigger extension via direct request...");
+            
+            // Create a custom event that might trigger extension
+            const walletEvent = new CustomEvent('walletRequest', { detail: { wallet: 'unisat' } });
+            window.dispatchEvent(walletEvent);
+            
+            // Give the extension a moment to respond
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Check again if unisat is now available
+            if (typeof window.unisat === 'undefined') {
+                throw new Error("Unisat wallet not found. Please install the Unisat browser extension.");
+            }
+        }
+    }
+    
+    console.log("Unisat detected:", window.unisat.version || "version unknown");
+    
+    // Request connection to wallet with error handling
+    let accounts;
+    try {
+        accounts = await window.unisat.requestAccounts();
+    } catch (connectionError) {
+        console.error("Error during requestAccounts:", connectionError);
+        
+        // Try alternative connection method if first one fails
+        try {
+            console.log("Trying alternative connection method...");
+            accounts = await window.unisat.enable();
+        } catch (altError) {
+            console.error("Alternative connection also failed:", altError);
+            throw new Error("Could not connect to Unisat wallet.");
+        }
+    }
+    
+    console.log("Connected accounts:", accounts);
+    
+    if (!accounts || accounts.length === 0) {
+        throw new Error("No accounts found in Unisat Wallet. Please ensure you are logged in.");
+    }
+
+    const address = accounts[0];
+    currentAccount = address;
+    
+    // Get network information with fallback
+    let network;
+    try {
+        network = await window.unisat.getNetwork();
+    } catch (networkError) {
+        console.error("Error getting network:", networkError);
+        // Fallback to checking address format
+        network = "unknown";
+    }
+    
+    console.log("Network:", network);
+    
+    // Check if on Signet/Testnet using multiple methods
+    let isSignetOrTestnet = false;
+    
+    // Method 1: Check network value
+    if (network && network !== "unknown") {
+        const networkStr = String(network).toLowerCase();
+        isSignetOrTestnet = networkStr.includes("signet") || networkStr.includes("testnet");
+        console.log("Network check result:", isSignetOrTestnet);
+    }
+    
+    // Method 2: If network check failed or returned unknown, check address format
+    if (!isSignetOrTestnet || network === "unknown") {
+        isSignetOrTestnet = isTestnetAddress(address);
+        console.log("Address format check result:", isSignetOrTestnet);
+    }
+    
+    console.log("Final network determination:", isSignetOrTestnet, "Network value:", network, "Address:", address);
+    
+    if (!isSignetOrTestnet) {
+        throw new Error("You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
+    }
+    
+    // Successfully connected to Signet/Testnet
+    walletConnected = true;
+    updateWalletUI(true, address);
+    console.log("Wallet connected successfully to Signet/Testnet.");
+}
+
+// Connect to Xverse wallet
+async function connectXverseWallet() {
+    // Check if Xverse is available
+    if (typeof window.XverseProviders === 'undefined') {
+        throw new Error("Xverse wallet not found. Please install the Xverse browser extension.");
+    }
+    
+    try {
+        // Request connection to Xverse wallet
+        const accounts = await window.XverseProviders.BitcoinProvider.request('getAddresses');
+        
+        if (!accounts || accounts.length === 0 || !accounts.addresses || accounts.addresses.length === 0) {
+            throw new Error("No accounts found in Xverse Wallet.");
+        }
+        
+        // Get the first address (testnet)
+        const testnetAddresses = accounts.addresses.filter(addr => addr.type === 'testnet');
+        if (!testnetAddresses || testnetAddresses.length === 0) {
+            throw new Error("No testnet addresses found. Please switch to Signet in Xverse wallet.");
+        }
+        
+        const address = testnetAddresses[0].address;
+        currentAccount = address;
+        
+        // Check if address is a testnet/signet address
+        if (!isTestnetAddress(address)) {
+            throw new Error("You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
+        }
+        
+        // Successfully connected
+        walletConnected = true;
+        updateWalletUI(true, address);
+        console.log("Xverse wallet connected successfully to Signet/Testnet.");
+        
+    } catch (error) {
+        console.error("Error connecting to Xverse wallet:", error);
+        throw error;
+    }
+}
+
+// Connect to OKX wallet
+async function connectOKXWallet() {
+    // Check if OKX wallet is available
+    if (typeof window.okxwallet === 'undefined') {
+        throw new Error("OKX wallet not found. Please install the OKX wallet browser extension.");
+    }
+    
+    try {
+        // Request connection to OKX wallet
+        const accounts = await window.okxwallet.bitcoin.connect();
+        
+        if (!accounts || accounts.length === 0) {
+            throw new Error("No accounts found in OKX Wallet.");
+        }
+        
+        const address = accounts[0];
+        currentAccount = address;
+        
+        // Check if address is a testnet/signet address
+        if (!isTestnetAddress(address)) {
+            throw new Error("You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
+        }
+        
+        // Successfully connected
+        walletConnected = true;
+        updateWalletUI(true, address);
+        console.log("OKX wallet connected successfully to Signet/Testnet.");
+        
+    } catch (error) {
+        console.error("Error connecting to OKX wallet:", error);
+        throw error;
+    }
+}
+
+// Connect to Leather wallet
+async function connectLeatherWallet() {
+    // Check if Leather wallet is available
+    if (typeof window.btc === 'undefined') {
+        throw new Error("Leather wallet not found. Please install the Leather wallet browser extension.");
+    }
+    
+    try {
+        // Request connection to Leather wallet
+        const accounts = await window.btc.request('getAddresses');
+        
+        if (!accounts || accounts.length === 0) {
+            throw new Error("No accounts found in Leather Wallet.");
+        }
+        
+        const address = accounts[0];
+        currentAccount = address;
+        
+        // Check if address is a testnet/signet address
+        if (!isTestnetAddress(address)) {
+            throw new Error("You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
+        }
+        
+        // Successfully connected
+        walletConnected = true;
+        updateWalletUI(true, address);
+        console.log("Leather wallet connected successfully to Signet/Testnet.");
+        
+    } catch (error) {
+        console.error("Error connecting to Leather wallet:", error);
+        throw error;
+    }
+}
+
+// Disconnect wallet
+function disconnectWallet() {
+    walletConnected = false;
+    currentAccount = null;
+    currentWalletType = null;
+    updateWalletUI(false);
+    console.log("Wallet disconnected");
+}
+
+// Update the connect wallet button to show wallet selection modal
+document.getElementById("connectWallet").removeEventListener("click", connectUnisatWallet);
+document.getElementById("connectWallet").addEventListener("click", function() {
+    if (walletConnected) {
+        disconnectWallet();
+    } else {
+        showWalletSelectionModal();
+    }
+});
+// Terms and Privacy Policy popup
+document.addEventListener('DOMContentLoaded', function() {
+    const tcppLink = document.getElementById('tcppLink');
+    if (tcppLink) {
+        tcppLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            showModal("Terms & Privacy Policy", `
+                <p><strong>Experimental Project Notice</strong></p>
+                <p>This Bitcoin Time Capsule Contract is an experimental project running on Bitcoin Signet (testnet).</p>
+                <p>Important information:</p>
+                <ul>
+                    <li>This is a demonstration project only</li>
+                    <li>No real Bitcoin is used or stored</li>
+                    <li>All data is stored on the Signet testnet blockchain</li>
+                    <li>No personal data is collected beyond what you explicitly store in messages</li>
+                    <li>Messages stored in the time capsule will become publicly viewable after the unlock block height</li>
+                </ul>
+                <p>By using this application, you acknowledge its experimental nature and understand that it should not be used for storing sensitive or important information.</p>
+            `);
+        });
+    }
+});
+// Move the Terms & Privacy Policy link handler to the wallet selection modal
+document.addEventListener('DOMContentLoaded', function() {
+    const tcppLink = document.getElementById('tcppLink');
+    if (tcppLink) {
+        tcppLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            showModal("Terms & Privacy Policy", `
+                <p><strong>Experimental Project Notice</strong></p>
+                <p>This Bitcoin Time Capsule Contract is an experimental project running on Bitcoin Signet (testnet).</p>
+                <p>Important information:</p>
+                <ul>
+                    <li>This is a demonstration project only</li>
+                    <li>No real Bitcoin is used or stored</li>
+                    <li>All data is stored on the Signet testnet blockchain</li>
+                    <li>No personal data is collected beyond what you explicitly store in messages</li>
+                    <li>Messages stored in the time capsule will become publicly viewable after the unlock block height</li>
+                </ul>
+                <p>By using this application, you acknowledge its experimental nature and understand that it should not be used for storing sensitive or important information.</p>
+            `);
+        });
+    }
 });

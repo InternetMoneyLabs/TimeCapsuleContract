@@ -177,3 +177,50 @@
     <script src="script.js"></script>
 </body>
 </html>
+    <!-- Modal Popup Template -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modalTitle" class="modal-title">Message</h3>
+                <button id="modalClose" class="modal-close">&times;</button>
+            </div>
+            <div id="modalBody" class="modal-body">
+                <!-- Content will be inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button id="modalOk" class="modal-btn">OK</button>
+            </div>
+        </div>
+    </div>
+    <!-- Wallet Selection Modal -->
+    <div id="walletSelectionModal" class="modal-overlay">
+        <div class="modal-container wallet-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Select your Bitcoin wallet</h3>
+                <button id="walletModalClose" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="wallet-options">
+                    <button class="wallet-option" data-wallet="unisat">
+                        <img src="unisat-logo.png" alt="Unisat" width="50" height="50" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'50\' viewBox=\'0 0 50 50\'%3E%3Crect width=\'50\' height=\'50\' fill=\'%23333\'/%3E%3Ctext x=\'25\' y=\'30\' font-family=\'Arial\' font-size=\'12\' text-anchor=\'middle\' fill=\'%23fff\'%3EUnisat%3C/text%3E%3C/svg%3E'">
+                        <span>Unisat</span>
+                    </button>
+                    <button class="wallet-option" data-wallet="xverse">
+                        <img src="xverse-logo.png" alt="Xverse" width="50" height="50" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'50\' viewBox=\'0 0 50 50\'%3E%3Crect width=\'50\' height=\'50\' fill=\'%23333\'/%3E%3Ctext x=\'25\' y=\'30\' font-family=\'Arial\' font-size=\'12\' text-anchor=\'middle\' fill=\'%23fff\'%3EXverse%3C/text%3E%3C/svg%3E'">
+                        <span>Xverse</span>
+                    </button>
+                    <button class="wallet-option" data-wallet="okx">
+                        <img src="okx-logo.png" alt="OKX" width="50" height="50" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'50\' viewBox=\'0 0 50 50\'%3E%3Crect width=\'50\' height=\'50\' fill=\'%23333\'/%3E%3Ctext x=\'25\' y=\'30\' font-family=\'Arial\' font-size=\'12\' text-anchor=\'middle\' fill=\'%23fff\'%3EOKX%3C/text%3E%3C/svg%3E'">
+                        <span>OKX</span>
+                    </button>
+                    <button class="wallet-option" data-wallet="leather">
+                        <img src="leather-logo.png" alt="Leather" width="50" height="50" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'50\' viewBox=\'0 0 50 50\'%3E%3Crect width=\'50\' height=\'50\' fill=\'%23333\'/%3E%3Ctext x=\'25\' y=\'30\' font-family=\'Arial\' font-size=\'12\' text-anchor=\'middle\' fill=\'%23fff\'%3ELeather%3C/text%3E%3C/svg%3E'">
+                        <span>Leather</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <p class="wallet-disclaimer">By connecting your wallet, you agree to <a href="#" id="tcppLink">Terms of Service and Privacy Policy</a></p>
+            </div>
+        </div>
+    </div>
