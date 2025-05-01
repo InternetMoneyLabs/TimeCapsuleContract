@@ -270,10 +270,23 @@ textarea {
     padding: 10px;
     border-radius: 5px;
     border: 1px solid var(--border-color);
-    background-color: var(--card-background-alt);
-    color: var(--text-color);
+    background-color: white;
+    color: #333;
     resize: vertical;
     margin-bottom: 5px;
+    position: relative;
+    transition: background 0.3s ease;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg fill='%23f0f0f0' fill-opacity='0.4'%3E%3Cpath d='M100 0 L130 60 L200 70 L150 110 L160 180 L100 150 L40 180 L50 110 L0 70 L70 60 Z'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: bottom right;
+    background-size: 80px auto;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(0, 140, 186, 0.2);
+    background-image: none;
 }
 
 .char-counter {
@@ -407,4 +420,10 @@ footer p {
         border-radius: 5px;
         width: 100%;
     }
+}
+/* Inline Icon */
+.inline-icon {
+    height: 32px;
+    vertical-align: middle;
+    margin: 0 3px;
 }

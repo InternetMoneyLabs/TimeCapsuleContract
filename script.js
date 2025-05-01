@@ -174,22 +174,19 @@ async function checkExistingConnection() {
 function updateWalletUI(connected, address = null) {
     const connectButton = document.getElementById("connectWallet");
     const walletStatus = document.getElementById("walletStatus");
-    const messageSection = document.getElementById("messageSection");
+    const encryptionResult = document.getElementById("encryptionResult");
     
     if (connected && address) {
         connectButton.innerText = "Disconnect Wallet";
         walletStatus.innerText = `Connected: ${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
         walletStatus.style.color = '#2ecc71';
-        // Show message input section
-        if (messageSection) messageSection.style.display = "block";
+        // Show encryption result if it exists
+        if (encryptionResult) encryptionResult.style.display = "none";
     } else {
         connectButton.innerText = "Connect Wallet (Unisat)";
         walletStatus.innerText = "Wallet Status: Not Connected";
         walletStatus.style.color = '';
-        // Hide message input section
-        if (messageSection) messageSection.style.display = "none";
         // Hide encryption result
-        const encryptionResult = document.getElementById("encryptionResult");
         if (encryptionResult) encryptionResult.style.display = "none";
     }
 }
@@ -206,18 +203,56 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
     }
     
     try {
-        // Wait for UniSat to be available
-        const unisat = await waitForUnisat();
-        if (!unisat) {
-            alert("Unisat wallet not found! Please install the Unisat browser extension.");
-            updateWalletUI(false);
-            return;
+        console.log("Attempting to connect to wallet...");
+        
+        // Check if unisat is defined in window object
+        if (typeof window.unisat === 'undefined') {
+            console.log("Unisat not found in window object. Checking if it's available through other means...");
+            
+            // Try to detect wallet through alternative methods
+            if (window.bitcoin || window.BitcoinProvider) {
+                console.log("Alternative Bitcoin provider detected");
+                // Use alternative provider if available
+                window.unisat = window.bitcoin || window.BitcoinProvider;
+            } else {
+                // Create a direct request to open the extension
+                console.log("No wallet detected. Attempting to trigger extension via direct request...");
+                
+                // Create a custom event that might trigger extension
+                const walletEvent = new CustomEvent('walletRequest', { detail: { wallet: 'unisat' } });
+                window.dispatchEvent(walletEvent);
+                
+                // Give the extension a moment to respond
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Check again if unisat is now available
+                if (typeof window.unisat === 'undefined') {
+                    alert("Unisat wallet not found! Please install the Unisat browser extension or disable Lockdown Mode if you're using it.");
+                    updateWalletUI(false);
+                    return;
+                }
+            }
         }
         
-        console.log("Unisat detected:", unisat.version || "version unknown");
+        console.log("Unisat detected:", window.unisat.version || "version unknown");
         
-        // Request connection to wallet
-        const accounts = await unisat.requestAccounts();
+        // Request connection to wallet with error handling
+        let accounts;
+        try {
+            accounts = await window.unisat.requestAccounts();
+        } catch (connectionError) {
+            console.error("Error during requestAccounts:", connectionError);
+            
+            // Try alternative connection method if first one fails
+            try {
+                console.log("Trying alternative connection method...");
+                accounts = await window.unisat.enable();
+            } catch (altError) {
+                console.error("Alternative connection also failed:", altError);
+                throw new Error("Could not connect to wallet. Please check if Lockdown Mode is enabled and disable it if necessary.");
+            }
+        }
+        
         console.log("Connected accounts:", accounts);
         
         if (!accounts || accounts.length === 0) {
@@ -229,8 +264,16 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
         const address = accounts[0];
         currentAccount = address;
         
-        // Get network information
-        const network = await unisat.getNetwork();
+        // Get network information with fallback
+        let network;
+        try {
+            network = await window.unisat.getNetwork();
+        } catch (networkError) {
+            console.error("Error getting network:", networkError);
+            // Fallback to checking address format
+            network = "unknown";
+        }
+        
         console.log("Network:", network);
         
         // Check if on Signet/Testnet using multiple methods
@@ -264,7 +307,7 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
         
     } catch (error) {
         console.error("Error connecting to Unisat Wallet:", error);
-        alert("Error connecting to Unisat Wallet: " + error.message);
+        alert("Error connecting to Unisat Wallet: " + error.message + "\n\nIf you're using Lockdown Mode, please disable it temporarily to use this application.");
         updateWalletUI(false);
     }
 });
