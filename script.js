@@ -21,6 +21,19 @@ function waitForUnisat(timeout = 3000) {
     });
 }
 
+// Check if address is a testnet/signet address
+function isTestnetAddress(address) {
+    // Bitcoin testnet/signet addresses typically start with:
+    // - tb1 (for SegWit)
+    // - m, n, or 2 (for legacy)
+    return address && (
+        address.startsWith('tb1') || 
+        address.startsWith('m') || 
+        address.startsWith('n') || 
+        address.startsWith('2')
+    );
+}
+
 // Connect wallet button handler
 document.getElementById("connectWallet").addEventListener("click", async () => {
     try {
@@ -43,27 +56,42 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
             document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
             return;
         }
+
+        const address = accounts[0];
         
         // Get network information
         const network = await unisat.getNetwork();
         console.log("Network:", network);
         
-        // Check if on Signet - accept any value that contains "signet" (case insensitive)
-        // UniSat's own site uses a simple string comparison
-        const networkStr = String(network).toLowerCase();
-        const isSignet = networkStr.includes("signet");
+        // Check if on Signet/Testnet using multiple methods:
+        // 1. Check network value if available
+        // 2. Check address format as fallback
+        let isSignetOrTestnet = false;
         
-        console.log("Is Signet:", isSignet, "Network value:", network);
+        // Method 1: Check network value
+        if (network && network !== "unknown") {
+            const networkStr = String(network).toLowerCase();
+            isSignetOrTestnet = networkStr.includes("signet") || networkStr.includes("testnet");
+            console.log("Network check result:", isSignetOrTestnet);
+        }
         
-        if (!isSignet) {
+        // Method 2: If network check failed or returned unknown, check address format
+        if (!isSignetOrTestnet || network === "unknown") {
+            isSignetOrTestnet = isTestnetAddress(address);
+            console.log("Address format check result:", isSignetOrTestnet);
+        }
+        
+        console.log("Final network determination:", isSignetOrTestnet, "Network value:", network, "Address:", address);
+        
+        if (!isSignetOrTestnet) {
             alert("⚠ You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
             document.getElementById("walletStatus").innerText = "Wallet Status: Not Connected";
             return;
         }
         
-        // Successfully connected to Signet
-        document.getElementById("walletStatus").innerText = `Connected to Signet: ${accounts[0]}`;
-        console.log("Wallet connected successfully to Signet.");
+        // Successfully connected to Signet/Testnet
+        document.getElementById("walletStatus").innerText = `Connected to Signet: ${address}`;
+        console.log("Wallet connected successfully to Signet/Testnet.");
         
     } catch (error) {
         console.error("Error connecting to Unisat Wallet:", error);
