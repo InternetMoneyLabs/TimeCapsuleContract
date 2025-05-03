@@ -11,13 +11,19 @@ const CONTRACT_CONFIG = {
         contractSupport: 40
     }
 };
+
 // Store wallet connection state
 let walletConnected = false;
 let currentAccount = null;
+let currentWalletType = null;
+
+// Global variables for pagination
+let allMessages = [];
+let currentPage = 1;
+const messagesPerPage = 10;
 
 // Check for existing connection on page load
 document.addEventListener('DOMContentLoaded', async () => {
-    await checkExistingConnection();
     await updateBlockHeightInfo();
     await loadStoredMessages();
     initVisitorCounter();
@@ -58,27 +64,43 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+    
+    // Update the connect wallet button to show wallet selection modal
+    const connectWalletBtn = document.getElementById("connectWallet");
+    if (connectWalletBtn) {
+        connectWalletBtn.addEventListener('click', function() {
+            if (walletConnected) {
+                disconnectWallet();
+            } else {
+                showWalletSelectionModal();
+            }
+        });
+    }
 });
 
 // Setup donation address copy functionality
 function setupDonationCopy() {
     const donationAddress = document.getElementById('donationAddress');
-    if (donationAddress) {
+    const donationAddressText = document.getElementById('donationAddressText');
+    
+    if (donationAddress && donationAddressText) {
         donationAddress.addEventListener('click', function() {
-            // Get the text content (excluding the SVG icon)
-            const address = this.textContent.trim();
+            // Get the text content from the span
+            const address = donationAddressText.textContent.trim();
             
             // Copy to clipboard
             navigator.clipboard.writeText(address)
                 .then(() => {
                     // Show confirmation
                     const confirmation = this.querySelector('.copy-confirmation');
-                    confirmation.classList.add('show');
-                    
-                    // Hide after animation completes
-                    setTimeout(() => {
-                        confirmation.classList.remove('show');
-                    }, 2000);
+                    if (confirmation) {
+                        confirmation.classList.add('show');
+                        
+                        // Hide after animation completes
+                        setTimeout(() => {
+                            confirmation.classList.remove('show');
+                        }, 2000);
+                    }
                 })
                 .catch(err => {
                     console.error('Failed to copy: ', err);
@@ -88,7 +110,7 @@ function setupDonationCopy() {
 }
 
 // Tab switching functionality
-function switchTab(tabId) {
+function switchTab(tabId, clickedButton) {
     // Hide all tab contents
     const tabContents = document.querySelectorAll('.tab-content');
     tabContents.forEach(tab => {
@@ -96,31 +118,50 @@ function switchTab(tabId) {
     });
     
     // Deactivate all tab buttons
-    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabButtons = document.querySelectorAll('.tab-btn');
     tabButtons.forEach(button => {
         button.classList.remove('active');
     });
     
     // Show the selected tab content
-    document.getElementById(tabId).classList.add('active');
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
     
     // Activate the clicked tab button
-    event.currentTarget.classList.add('active');
+    if (clickedButton) {
+        clickedButton.classList.add('active');
+    }
 }
 
-// Wait for UniSat wallet to be available
-function waitForUnisat(timeout = 3000) {
+// Wait for wallet to be available
+function waitForWallet(walletType, timeout = 3000) {
     return new Promise((resolve) => {
-        if (window.unisat) {
-            return resolve(window.unisat);
+        let walletProvider = null;
+        
+        // Check if wallet is already available
+        if (walletType === 'unisat' && window.unisat) walletProvider = window.unisat;
+        if (walletType === 'xverse' && window.XverseProviders && window.XverseProviders.BitcoinProvider) walletProvider = window.XverseProviders.BitcoinProvider;
+        if (walletType === 'okx' && window.okxwallet && window.okxwallet.bitcoin) walletProvider = window.okxwallet.bitcoin;
+        if (walletType === 'leather' && window.btc) walletProvider = window.btc;
+        
+        if (walletProvider) {
+            return resolve(walletProvider);
         }
         
+        // Set up polling if wallet is not immediately available
         let timer = null;
         const interval = setInterval(() => {
-            if (window.unisat) {
+            if (walletType === 'unisat' && window.unisat) walletProvider = window.unisat;
+            if (walletType === 'xverse' && window.XverseProviders && window.XverseProviders.BitcoinProvider) walletProvider = window.XverseProviders.BitcoinProvider;
+            if (walletType === 'okx' && window.okxwallet && window.okxwallet.bitcoin) walletProvider = window.okxwallet.bitcoin;
+            if (walletType === 'leather' && window.btc) walletProvider = window.btc;
+            
+            if (walletProvider) {
                 clearInterval(interval);
                 clearTimeout(timer);
-                return resolve(window.unisat);
+                return resolve(walletProvider);
             }
         }, 100);
         
@@ -144,206 +185,189 @@ function isTestnetAddress(address) {
     );
 }
 
-// Calculate unlock block height (approximately)
-function calculateUnlockBlockHeight() {
-    // Bitcoin produces ~144 blocks per day
-    const blocksPerDay = 144;
-    const currentBlockHeight = 0; // This would need to be fetched from an API
-    return currentBlockHeight + (CONTRACT_CONFIG.unlockDays * blocksPerDay);
-}
-
-// Check for existing wallet connection
-async function checkExistingConnection() {
-    try {
-        const unisat = await waitForUnisat();
-        if (!unisat) {
-            return;
-        }
-        
-        // Check if already connected
-        const accounts = await unisat.getAccounts().catch(() => []);
-        if (accounts && accounts.length > 0) {
-            currentAccount = accounts[0];
-            
-            // Verify network
-            const network = await unisat.getNetwork().catch(() => "unknown");
-            let isSignetOrTestnet = false;
-            
-            if (network && network !== "unknown") {
-                const networkStr = String(network).toLowerCase();
-                isSignetOrTestnet = networkStr.includes("signet") || networkStr.includes("testnet");
-            }
-            
-            if (!isSignetOrTestnet) {
-                isSignetOrTestnet = isTestnetAddress(currentAccount);
-            }
-            
-            if (isSignetOrTestnet) {
-                walletConnected = true;
-                updateWalletUI(true, currentAccount);
-                console.log("Existing wallet connection detected:", currentAccount);
-            }
-        }
-    } catch (error) {
-        console.error("Error checking existing connection:", error);
-    }
-}
-
 // Update wallet UI based on connection state
 function updateWalletUI(connected, address = null) {
     const connectButton = document.getElementById("connectWallet");
     const walletStatus = document.getElementById("walletStatus");
-    const encryptionResult = document.getElementById("encryptionResult");
     
     if (connected && address) {
-        connectButton.innerText = "Disconnect Wallet";
+        // Show wallet type if available
+        const walletName = currentWalletType ? ` (${currentWalletType.charAt(0).toUpperCase() + currentWalletType.slice(1)})` : '';
+        connectButton.innerText = `Disconnect${walletName}`;
         walletStatus.innerText = `Connected: ${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-        walletStatus.style.color = '#2ecc71';
-        // Show encryption result if it exists
-        if (encryptionResult) encryptionResult.style.display = "none";
+        walletStatus.style.color = '#2ecc71'; // Success color
     } else {
-        connectButton.innerText = "Connect Wallet (Unisat)";
+        connectButton.innerText = "Connect Wallet";
         walletStatus.innerText = "Wallet Status: Not Connected";
-        walletStatus.style.color = '';
-        // Hide encryption result
-        if (encryptionResult) encryptionResult.style.display = "none";
+        walletStatus.style.color = ''; // Default color
     }
 }
 
-// Connect or disconnect wallet
-document.getElementById("connectWallet").addEventListener("click", async () => {
-    // If already connected, disconnect
-    if (walletConnected) {
-        walletConnected = false;
-        currentAccount = null;
-        updateWalletUI(false);
-        console.log("Wallet disconnected");
+// Show wallet selection modal
+function showWalletSelectionModal() {
+    const walletModal = document.getElementById('walletSelectionModal');
+    if (!walletModal) {
+        console.error("Wallet selection modal not found!");
         return;
     }
     
+    walletModal.classList.add('active');
+    
+    // Set up event listeners
+    const walletModalClose = document.getElementById('walletModalClose');
+    if (walletModalClose) {
+        walletModalClose.onclick = closeWalletModal;
+    }
+    
+    // Close when clicking outside
+    walletModal.onclick = function(event) {
+        if (event.target === walletModal) {
+            closeWalletModal();
+        }
+    };
+    
+    // Set up wallet option buttons
+    const walletOptions = document.querySelectorAll('.wallet-option');
+    walletOptions.forEach(option => {
+        option.onclick = function() {
+            const walletType = this.getAttribute('data-wallet');
+            connectWallet(walletType);
+            closeWalletModal();
+        };
+    });
+    
+    // Prevent scrolling on the body
+    document.body.style.overflow = 'hidden';
+}
+
+// Close wallet selection modal
+function closeWalletModal() {
+    const walletModal = document.getElementById('walletSelectionModal');
+    if (walletModal) {
+        walletModal.classList.remove('active');
+    }
+    document.body.style.overflow = '';
+}
+
+// Connect to selected wallet
+async function connectWallet(walletType) {
+    console.log(`Attempting to connect to ${walletType} wallet...`);
+    
     try {
-        console.log("Attempting to connect to wallet...");
+        let accounts = [];
+        let network = "unknown";
+        let provider = null;
         
-        // Check if unisat is defined in window object
-        if (typeof window.unisat === 'undefined') {
-            console.log("Unisat not found in window object. Checking if it's available through other means...");
-            
-            // Try to detect wallet through alternative methods
-            if (window.bitcoin || window.BitcoinProvider) {
-                console.log("Alternative Bitcoin provider detected");
-                // Use alternative provider if available
-                window.unisat = window.bitcoin || window.BitcoinProvider;
-            } else {
-                // Create a direct request to open the extension
-                console.log("No wallet detected. Attempting to trigger extension via direct request...");
+        switch(walletType) {
+            case 'unisat':
+                provider = await waitForWallet('unisat');
+                if (!provider) throw new Error("Unisat wallet not found. Please install the Unisat browser extension.");
                 
-                // Create a custom event that might trigger extension
-                const walletEvent = new CustomEvent('walletRequest', { detail: { wallet: 'unisat' } });
-                window.dispatchEvent(walletEvent);
-                
-                // Give the extension a moment to respond
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Check again if unisat is now available
-                if (typeof window.unisat === 'undefined') {
-                    showModal("Connection Cancelled", `
-                        <p>You closed the wallet extension without connecting.</p>
-                        <p>If you'd like to use TimeCapsuleContract, please connect your wallet when prompted.</p>
-                    `);
-                    updateWalletUI(false);
-                    return;
+                try {
+                    accounts = await provider.requestAccounts();
+                } catch (connectionError) {
+                    console.error("Error during Unisat requestAccounts:", connectionError);
+                    // Try alternative connection method
+                    try {
+                        accounts = await provider.enable();
+                    } catch (altError) {
+                        throw new Error(`Unisat connection failed: ${altError.message || "Unknown error"}`);
+                    }
                 }
-            }
+                
+                network = await provider.getNetwork().catch(() => "unknown");
+                break;
+                
+            case 'xverse':
+                provider = await waitForWallet('xverse');
+                if (!provider) throw new Error("Xverse wallet not found. Please install the Xverse browser extension.");
+                
+                try {
+                    const xverseAccounts = await provider.request('getAddresses');
+                    if (!xverseAccounts || !xverseAccounts.addresses || xverseAccounts.addresses.length === 0) {
+                        throw new Error("No accounts found in Xverse Wallet.");
+                    }
+                    
+                    // Find a testnet address
+                    const testnetAddresses = xverseAccounts.addresses.filter(addr => addr.type === 'testnet');
+                    if (!testnetAddresses || testnetAddresses.length === 0) {
+                        throw new Error("No testnet addresses found in Xverse. Please switch to Testnet/Signet in your wallet.");
+                    }
+                    
+                    accounts = [testnetAddresses[0].address];
+                    network = 'testnet'; // Assume testnet if testnet address found
+                } catch (error) {
+                    throw new Error(`Xverse connection failed: ${error.message || "Unknown error"}`);
+                }
+                break;
+                
+            case 'okx':
+                provider = await waitForWallet('okx');
+                if (!provider) throw new Error("OKX wallet not found. Please install the OKX wallet browser extension.");
+                
+                try {
+                    const okxResult = await provider.connect();
+                    if (!okxResult || okxResult.length === 0) {
+                        throw new Error("No accounts found in OKX Wallet.");
+                    }
+                    accounts = okxResult;
+                } catch (error) {
+                    throw new Error(`OKX connection failed: ${error.message || "Unknown error"}`);
+                }
+                break;
+                
+            case 'leather':
+                provider = await waitForWallet('leather');
+                if (!provider) throw new Error("Leather wallet not found. Please install the Leather wallet browser extension.");
+                
+                try {
+                    const leatherAccounts = await provider.request('getAddresses');
+                    if (!leatherAccounts || leatherAccounts.length === 0) {
+                        throw new Error("No accounts found in Leather Wallet.");
+                    }
+                    accounts = [leatherAccounts[0]];
+                } catch (error) {
+                    throw new Error(`Leather connection failed: ${error.message || "Unknown error"}`);
+                }
+                break;
+                
+            default:
+                throw new Error(`Unsupported wallet type: ${walletType}`);
         }
-        
-        console.log("Unisat detected:", window.unisat.version || "version unknown");
-        
-        // Request connection to wallet with error handling
-        let accounts;
-        try {
-            accounts = await window.unisat.requestAccounts();
-        } catch (connectionError) {
-            console.error("Error during requestAccounts:", connectionError);
-            
-            // Try alternative connection method if first one fails
-            try {
-                console.log("Trying alternative connection method...");
-                accounts = await window.unisat.enable();
-            } catch (altError) {
-                console.error("Alternative connection also failed:", altError);
-                showModal("Connection Error", `
-                    <p>Could not connect to wallet. Please check if Lockdown Mode is enabled and disable it if necessary.</p>
-                    <p>Error details: ${connectionError.message || "Unknown error"}</p>
-                `);
-                throw new Error("Could not connect to wallet.");
-            }
-        }
-        
-        console.log("Connected accounts:", accounts);
         
         if (!accounts || accounts.length === 0) {
-            showModal("No Accounts Found", "<p>No accounts found in Unisat Wallet. Please ensure you are logged in.</p>");
-            updateWalletUI(false);
-            return;
+            throw new Error("Failed to retrieve accounts from the selected wallet.");
         }
-
+        
         const address = accounts[0];
         currentAccount = address;
         
-        // Get network information with fallback
-        let network;
-        try {
-            network = await window.unisat.getNetwork();
-        } catch (networkError) {
-            console.error("Error getting network:", networkError);
-            // Fallback to checking address format
-            network = "unknown";
-        }
-        
-        console.log("Network:", network);
-        
-        // Check if on Signet/Testnet using multiple methods
+        // Check if on Signet/Testnet
         let isSignetOrTestnet = false;
-        
-        // Method 1: Check network value
         if (network && network !== "unknown") {
             const networkStr = String(network).toLowerCase();
             isSignetOrTestnet = networkStr.includes("signet") || networkStr.includes("testnet");
-            console.log("Network check result:", isSignetOrTestnet);
         }
-        
-        // Method 2: If network check failed or returned unknown, check address format
-        if (!isSignetOrTestnet || network === "unknown") {
+        if (!isSignetOrTestnet) {
             isSignetOrTestnet = isTestnetAddress(address);
-            console.log("Address format check result:", isSignetOrTestnet);
         }
-        
-        console.log("Final network determination:", isSignetOrTestnet, "Network value:", network, "Address:", address);
         
         if (!isSignetOrTestnet) {
-            showModal("Wrong Network", `
-                <p>⚠ You are NOT on Bitcoin Signet!</p>
-                <p>Please switch your wallet network to Signet and try again.</p>
-                <p>In Unisat Wallet, click the network selector and choose "Bitcoin Testnet, Signet".</p>
-            `);
-            updateWalletUI(false);
-            return;
+            throw new Error("You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
         }
         
-        // Successfully connected to Signet/Testnet
+        // Successfully connected
         walletConnected = true;
+        currentWalletType = walletType;
         updateWalletUI(true, address);
-        console.log("Wallet connected successfully to Signet/Testnet.");
+        console.log(`${walletType} wallet connected successfully to Signet/Testnet.`);
         
     } catch (error) {
-        console.error("Error connecting to Unisat Wallet:", error);
-        showModal("Connection Error", `
-            <p>Error connecting to Unisat Wallet: ${error.message}</p>
-            <p>If you're using Lockdown Mode, please disable it temporarily to use this application.</p>
-        `);
+        console.error(`Error connecting to wallet:`, error);
+        showModal("Connection Error", `<p>${error.message}</p>`);
         updateWalletUI(false);
     }
-});
+}
 
 // Function to encrypt messages locally in the browser
 function encryptMessage() {
@@ -424,62 +448,6 @@ function encryptMessage() {
     }
 }
 
-// Sign and submit transaction
-document.getElementById("signTransaction").addEventListener("click", async () => {
-    if (!walletConnected || !currentAccount) {
-        showModal("Wallet Not Connected", "<p>Wallet not connected! Please connect your wallet first.</p>");
-        return;
-    }
-    
-    if (!window.txData) {
-        showModal("No Transaction Data", "<p>No transaction data found. Please encrypt a message first.</p>");
-        return;
-    }
-    
-    try {
-        const unisat = await waitForUnisat();
-        if (!unisat) {
-            showModal("Wallet Not Found", "<p>Unisat wallet not found! Please install the Unisat browser extension.</p>");
-            return;
-        }
-        
-        // Convert BTC amount to satoshis (1 BTC = 100,000,000 satoshis)
-        const satoshis = Math.floor(CONTRACT_CONFIG.feeAmount * 100000000);
-        
-        // Create OP_RETURN data with the encrypted message
-        const data = window.txData.message;
-        
-        // Prepare transaction
-        document.getElementById("output").innerHTML += "<br><br>Preparing transaction...";
-        
-        // Send transaction with OP_RETURN data
-        const txid = await unisat.sendBitcoin(
-            CONTRACT_CONFIG.feeRecipient,
-            satoshis,
-            {
-                memo: data // This will be stored as OP_RETURN data
-            }
-        );
-        
-        console.log("Transaction sent:", txid);
-        
-        // Show success message with transaction ID
-        document.getElementById("output").innerHTML += `
-            <br><br>✅ Transaction sent successfully!<br>
-            Transaction ID: <a href="https://explorer.bc-2.jp/tx/${txid}" target="_blank">${txid}</a><br>
-            Your message has been stored in the Bitcoin Time Capsule and will be unlockable after block ${CONTRACT_CONFIG.unlockBlockHeight}.
-        `;
-        
-        // Add the new message to the stored messages list
-        addNewMessageToList(txid);
-        
-    } catch (error) {
-        console.error("Error sending transaction:", error);
-        document.getElementById("output").innerHTML += `<br><br>❌ Error sending transaction: ${error.message}`;
-        showModal("Transaction Error", `<p>Failed to send transaction: ${error.message}</p>`);
-    }
-});
-
 // Add a new message to the stored messages list
 function addNewMessageToList(txId) {
     const storedMessagesList = document.getElementById("storedMessagesList");
@@ -502,7 +470,7 @@ function addNewMessageToList(txId) {
     }
     
     // Switch to the stored messages tab
-    switchTab('storedTab');
+    switchTab('storedTab', document.querySelector('.tab-btn[onclick*="storedTab"]'));
 }
 
 // Fetch current block height from an API
@@ -523,6 +491,12 @@ async function updateBlockHeightInfo() {
     const currentBlockHeightElement = document.getElementById("currentBlockHeight");
     const blocksRemainingElement = document.getElementById("blocksRemaining");
     const progressBar = document.getElementById("progressBar");
+    const unlockBlockHeightElement = document.getElementById("unlockBlockHeight");
+    
+    // Set unlock block height from config
+    if (unlockBlockHeightElement) {
+        unlockBlockHeightElement.innerText = CONTRACT_CONFIG.unlockBlockHeight.toLocaleString();
+    }
     
     try {
         const currentBlockHeight = await getCurrentBlockHeight();
@@ -544,6 +518,9 @@ async function updateBlockHeightInfo() {
             
             // Update countdown timer
             updateCountdown(remainingBlocks);
+            
+            // Start the real-time countdown
+            startRealTimeCountdown(remainingBlocks);
             
         } else {
             currentBlockHeightElement.innerText = "Unable to fetch";
@@ -570,12 +547,19 @@ async function updateBlockHeightInfo() {
     setTimeout(updateBlockHeightInfo, 5 * 60 * 1000);
 }
 
-// Load sample stored messages (in a real implementation, these would come from an API)
+// Load stored messages (in a real implementation, these would come from an API)
 async function loadStoredMessages() {
     const storedMessagesList = document.getElementById("storedMessagesList");
+    const nextMessagesBtn = document.getElementById("nextMessagesBtn");
+    
+    if (!storedMessagesList) {
+        console.error("storedMessagesList element not found");
+        return;
+    }
     
     // In a real implementation, you would fetch this data from bestinslot or another indexer
-    const sampleMessages = [
+    // For demo purposes, let's create more sample messages to demonstrate pagination
+    allMessages = [
         {
             txId: "9cd1e383b217bba2271b69cc5c0075c19f1d29307248cb50e75c18eb1842c3fc",
             storedDate: "April 28, 2024",
@@ -590,6 +574,56 @@ async function loadStoredMessages() {
             txId: "5fe72d45a19b2d5c0eb1e1d815d7175f4cb4a8a20cebc1acd7c2f73f29e1902b",
             storedDate: "April 30, 2024",
             unlockBlockHeight: CONTRACT_CONFIG.unlockBlockHeight
+        },
+        {
+            txId: "6fe72d45a19b2d5c0eb1e1d815d7175f4cb4a8a20cebc1acd7c2f73f29e1902c",
+            storedDate: "May 1, 2024",
+            unlockBlockHeight: CONTRACT_CONFIG.unlockBlockHeight
+        },
+        {
+            txId: "7fe72d45a19b2d5c0eb1e1d815d7175f4cb4a8a20cebc1acd7c2f73f29e1902d",
+            storedDate: "May 1, 2024",
+            unlockBlockHeight: CONTRACT_CONFIG.unlockBlockHeight
+        },
+        {
+            txId: "8fe72d45a19b2d5c0eb1e1d815d7175f4cb4a8a20cebc1acd7c2f73f29e1902e",
+            storedDate: "May 1, 2024",
+            unlockBlockHeight: CONTRACT_CONFIG.unlockBlockHeight
+        },
+        {
+            txId: "9fe72d45a19b2d5c0eb1e1d815d7175f4cb4a8a20cebc1acd7c2f73f29e1902f",
+            storedDate: "May 2, 2024",
+            unlockBlockHeight: CONTRACT_CONFIG.unlockBlockHeight
+        },
+        {
+            txId: "afe72d45a19b2d5c0eb1e1d815d7175f4cb4a8a20cebc1acd7c2f73f29e19030",
+            storedDate: "May 2, 2024",
+            unlockBlockHeight: CONTRACT_CONFIG.unlockBlockHeight
+        },
+        {
+            txId: "bfe72d45a19b2d5c0eb1e1d815d7175f4cb4a8a20cebc1acd7c2f73f29e19031",
+            storedDate: "May 2, 2024",
+            unlockBlockHeight: CONTRACT_CONFIG.unlockBlockHeight
+        },
+        {
+            txId: "cfe72d45a19b2d5c0eb1e1d815d7175f4cb4a8a20cebc1acd7c2f73f29e19032",
+            storedDate: "May 2, 2024",
+            unlockBlockHeight: CONTRACT_CONFIG.unlockBlockHeight
+        },
+        {
+            txId: "dfe72d45a19b2d5c0eb1e1d815d7175f4cb4a8a20cebc1acd7c2f73f29e19033",
+            storedDate: "May 3, 2024",
+            unlockBlockHeight: CONTRACT_CONFIG.unlockBlockHeight
+        },
+        {
+            txId: "efe72d45a19b2d5c0eb1e1d815d7175f4cb4a8a20cebc1acd7c2f73f29e19034",
+            storedDate: "May 3, 2024",
+            unlockBlockHeight: CONTRACT_CONFIG.unlockBlockHeight
+        },
+        {
+            txId: "ffe72d45a19b2d5c0eb1e1d815d7175f4cb4a8a20cebc1acd7c2f73f29e19035",
+            storedDate: "May 3, 2024",
+            unlockBlockHeight: CONTRACT_CONFIG.unlockBlockHeight
         }
     ];
     
@@ -599,8 +633,48 @@ async function loadStoredMessages() {
     // Get current block height to determine status
     const currentBlockHeight = await getCurrentBlockHeight();
     
-    // Add sample messages to the list
-    sampleMessages.forEach(message => {
+    // Reset to first page
+    currentPage = 1;
+    
+    // Display first page of messages
+    displayMessages(currentBlockHeight);
+    
+    // Set up "Load More" button
+    if (nextMessagesBtn) {
+        // Show button only if there are more messages to load
+        if (allMessages.length > messagesPerPage) {
+            nextMessagesBtn.style.display = "block";
+            nextMessagesBtn.onclick = () => {
+                currentPage++;
+                displayMessages(currentBlockHeight);
+                
+                // Hide button if we've shown all messages
+                if (currentPage * messagesPerPage >= allMessages.length) {
+                    nextMessagesBtn.style.display = "none";
+                }
+            };
+        } else {
+            nextMessagesBtn.style.display = "none";
+        }
+    }
+    
+    // Adjust display for tall screens
+    adjustMessageListHeight();
+}
+
+// Display messages for the current page
+function displayMessages(currentBlockHeight) {
+    const storedMessagesList = document.getElementById("storedMessagesList");
+    if (!storedMessagesList) return;
+    
+    const startIndex = (currentPage - 1) * messagesPerPage;
+    const endIndex = Math.min(startIndex + messagesPerPage, allMessages.length);
+    
+    // Get messages for current page
+    const currentPageMessages = allMessages.slice(startIndex, endIndex);
+    
+    // Add messages to the list
+    currentPageMessages.forEach(message => {
         const isUnlocked = currentBlockHeight >= message.unlockBlockHeight;
         const statusClass = isUnlocked ? "status-unlocked" : "status-pending";
         const statusText = isUnlocked ? "Unlockable" : "Locked";
@@ -618,10 +692,44 @@ async function loadStoredMessages() {
     });
 }
 
+// Adjust message list height based on screen size
+function adjustMessageListHeight() {
+    const storedMessagesList = document.getElementById("storedMessagesList");
+    if (!storedMessagesList) return;
+    
+    // Get viewport height
+    const viewportHeight = window.innerHeight;
+    
+    // Calculate available height (viewport height minus other elements)
+    // This is an approximation - adjust these values based on your layout
+    const headerHeight = 80; // Approximate header height
+    const footerHeight = 100; // Approximate footer height
+    const otherElementsHeight = 200; // Other elements in the tab (padding, margins, etc.)
+    
+    // Calculate ideal height for message list
+    const idealHeight = viewportHeight - (headerHeight + footerHeight + otherElementsHeight);
+    
+    // Set minimum height (don't make it too small)
+    const minHeight = 300;
+    const finalHeight = Math.max(idealHeight, minHeight);
+    
+    // Apply height with max-height to allow scrolling if needed
+    storedMessagesList.style.maxHeight = `${finalHeight}px`;
+    storedMessagesList.style.overflowY = 'auto';
+}
+
+// Listen for window resize to adjust message list height
+window.addEventListener('resize', adjustMessageListHeight);
+
 // Check a specific message by transaction ID
 function checkMessage() {
     const txId = document.getElementById("txIdInput").value.trim();
     const messageStatus = document.getElementById("messageStatus");
+    
+    if (!messageStatus) {
+        console.error("messageStatus element not found");
+        return;
+    }
     
     if (!txId) {
         messageStatus.innerHTML = `<div class="status-indicator pending">Please enter a transaction ID</div>`;
@@ -638,7 +746,7 @@ function checkMessage() {
                 <div class="status-indicator unlocked">
                     <p>✅ This message is now unlockable!</p>
                     <p>To unlock and view the message content, connect your wallet and click below:</p>
-                    <button onclick="unlockMessage('${txId}')">Unlock Message</button>
+                    <button onclick="unlockMessage('${txId}')" class="btn btn-primary">Unlock Message</button>
                 </div>
             `;
         } else {
@@ -653,20 +761,12 @@ function checkMessage() {
                 </div>
             `;
         }
+    }).catch(error => {
+        console.error("Error checking message:", error);
+        messageStatus.innerHTML = `<div class="status-indicator pending">Error checking message status. Please try again.</div>`;
     });
 }
 
-// Placeholder function for unlocking a message
-function unlockMessage(txId) {
-    if (!walletConnected) {
-        alert("Please connect your wallet first");
-        return;
-    }
-    
-    // In a real implementation, this would fetch the message from the blockchain
-    // and distribute fees according to the contract rules
-    alert(`This is a placeholder for unlocking message ${txId}. In the full implementation, this would retrieve the message from the blockchain and distribute fees.`);
-}
 // Calculate message byte size after encoding
 function calculateMessageBytes(message) {
     // Calculate UTF-8 bytes
@@ -681,6 +781,85 @@ function calculateMessageBytes(message) {
         base64Size: base64Size,
         withinLimit: base64Size <= 80 // Standard OP_RETURN size limit
     };
+}
+
+// Update countdown based on remaining blocks
+function updateCountdown(remainingBlocks) {
+    // Approximate time calculations (10 minutes per block on average)
+    const minutesPerBlock = 10;
+    const totalMinutes = remainingBlocks * minutesPerBlock;
+    
+    const days = Math.floor(totalMinutes / (60 * 24));
+    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+    const minutes = Math.floor(totalMinutes % 60);
+    
+    // Update the countdown elements
+    const countdownDays = document.getElementById("countdownDays");
+    const countdownHours = document.getElementById("countdownHours");
+    const countdownMinutes = document.getElementById("countdownMinutes");
+    const countdownSeconds = document.getElementById("countdownSeconds");
+    
+    if (countdownDays) countdownDays.innerText = days.toString().padStart(2, '0');
+    if (countdownHours) countdownHours.innerText = hours.toString().padStart(2, '0');
+    if (countdownMinutes) countdownMinutes.innerText = minutes.toString().padStart(2, '0');
+    if (countdownSeconds) countdownSeconds.innerText = '00';
+}
+
+// Start a real-time countdown that ticks every second
+function startRealTimeCountdown(remainingBlocks) {
+    // Clear any existing interval
+    if (window.countdownInterval) {
+        clearInterval(window.countdownInterval);
+    }
+    
+    // Calculate the target date based on remaining blocks
+    // Assuming 10 minutes per block on average
+    const minutesPerBlock = 10;
+    const totalMinutes = remainingBlocks * minutesPerBlock;
+    const targetDate = new Date(Date.now() + totalMinutes * 60 * 1000);
+    
+    // Update the countdown every second
+    window.countdownInterval = setInterval(() => {
+        // Get current time
+        const now = new Date().getTime();
+        
+        // Calculate the time remaining
+        const distance = targetDate - now;
+        
+        // Time calculations
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        // Update the countdown elements
+        const countdownDays = document.getElementById("countdownDays");
+        const countdownHours = document.getElementById("countdownHours");
+        const countdownMinutes = document.getElementById("countdownMinutes");
+        const countdownSeconds = document.getElementById("countdownSeconds");
+        
+        if (countdownDays) countdownDays.innerText = days.toString().padStart(2, '0');
+        if (countdownHours) countdownHours.innerText = hours.toString().padStart(2, '0');
+        if (countdownMinutes) countdownMinutes.innerText = minutes.toString().padStart(2, '0');
+        if (countdownSeconds) countdownSeconds.innerText = seconds.toString().padStart(2, '0');
+        
+        // If the countdown is finished
+        if (distance < 0) {
+            clearInterval(window.countdownInterval);
+            
+            // Set all values to zero
+            if (countdownDays) countdownDays.innerText = '00';
+            if (countdownHours) countdownHours.innerText = '00';
+            if (countdownMinutes) countdownMinutes.innerText = '00';
+            if (countdownSeconds) countdownSeconds.innerText = '00';
+            
+            // Update status text
+            const statusText = document.querySelector('.status-text');
+            if (statusText) {
+                statusText.innerText = 'Time Capsule messages are now unlockable!';
+            }
+        }
+    }, 1000);
 }
 
 // Check message content for inappropriate language
@@ -731,112 +910,6 @@ function checkMessageContent(message) {
     
     return { valid: true };
 }
-// Update countdown timer based on remaining blocks
-function updateCountdown(remainingBlocks) {
-    // Get countdown elements
-    const countdownDays = document.getElementById("countdownDays");
-    const countdownHours = document.getElementById("countdownHours");
-    const countdownMinutes = document.getElementById("countdownMinutes");
-    const countdownSeconds = document.getElementById("countdownSeconds");
-    
-    // If elements don't exist, return
-    if (!countdownDays || !countdownHours || !countdownMinutes || !countdownSeconds) {
-        return;
-    }
-    
-    // Calculate time remaining
-    if (remainingBlocks <= 0) {
-        // If no blocks remaining, set countdown to 0
-        countdownDays.innerText = "0";
-        countdownHours.innerText = "00";
-        countdownMinutes.innerText = "00";
-        countdownSeconds.innerText = "00";
-        
-        // Change status to unlocked
-        const blockStatus = document.getElementById("blockStatus");
-        if (blockStatus) {
-            blockStatus.classList.remove("pending");
-            blockStatus.classList.add("unlocked");
-        }
-        
-        // Clear interval if it exists
-        if (window.countdownInterval) {
-            clearInterval(window.countdownInterval);
-            window.countdownInterval = null;
-        }
-        
-        return;
-    }
-    
-    // Calculate time based on 10 minutes per block on average
-    const totalSeconds = remainingBlocks * 10 * 60;
-    
-    // Set the target time once and store it
-    if (!window.targetTime) {
-        // Get current time
-        const now = new Date();
-        
-        // Calculate target time by adding total seconds to current time
-        window.targetTime = new Date(now.getTime() + totalSeconds * 1000);
-    }
-    
-    // Function to update the countdown display
-    function updateDisplay() {
-        // Get current time
-        const now = new Date();
-        
-        // Calculate difference in milliseconds
-        const diff = window.targetTime - now;
-        
-        if (diff <= 0) {
-            // Time's up
-            countdownDays.innerText = "0";
-            countdownHours.innerText = "00";
-            countdownMinutes.innerText = "00";
-            countdownSeconds.innerText = "00";
-            
-            if (window.countdownInterval) {
-                clearInterval(window.countdownInterval);
-                window.countdownInterval = null;
-            }
-            return;
-        }
-        
-        // Calculate days, hours, minutes, seconds
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        
-        // Update countdown elements
-        countdownDays.innerText = days;
-        countdownHours.innerText = hours.toString().padStart(2, '0');
-        countdownMinutes.innerText = minutes.toString().padStart(2, '0');
-        countdownSeconds.innerText = seconds.toString().padStart(2, '0');
-    }
-    
-    // Update immediately
-    updateDisplay();
-    
-    // Set interval to update every second
-    if (window.countdownInterval) {
-        clearInterval(window.countdownInterval);
-    }
-    window.countdownInterval = setInterval(updateDisplay, 1000);
-}
-
-// Fetch current block height from mempool.space API
-async function getCurrentBlockHeight() {
-    try {
-        // Using mempool.space API for Signet
-        const response = await fetch('https://mempool.space/signet/api/blocks/tip/height');
-        const blockHeight = await response.text();
-        return parseInt(blockHeight);
-    } catch (error) {
-        console.error("Error fetching block height:", error);
-        return null;
-    }
-}
 
 // Handle visitor counter using localStorage
 function initVisitorCounter() {
@@ -867,10 +940,6 @@ function initVisitorCounter() {
     visitorCountElement.innerText = count;
 }
 
-// Initialize visitor counter when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    initVisitorCounter();
-});
 // Modal popup system
 function showModal(title, content) {
     // Set modal content
@@ -945,289 +1014,29 @@ function getSupportedLanguages() {
     ];
 }
 
-// Initialize modal system
+// Initialize modal system and set up Terms & Privacy Policy link
 document.addEventListener('DOMContentLoaded', function() {
-    // Ensure modal elements exist
-    if (!document.getElementById('modalOverlay')) {
-        console.error("Modal elements not found in the DOM");
+    // Set up Terms & Privacy Policy link
+    const tcppLink = document.getElementById('tcppLink');
+    if (tcppLink) {
+        tcppLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            showModal("Terms & Privacy Policy", `
+                <p><strong>Experimental Project Notice</strong></p>
+                <p>This Bitcoin Time Capsule Contract is an experimental project running on Bitcoin Signet (testnet).</p>
+                <p>Important information:</p>
+                <ul>
+                    <li>This is a demonstration project only</li>
+                    <li>No real Bitcoin is used or stored</li>
+                    <li>All data is stored on the Signet testnet blockchain</li>
+                    <li>No personal data is collected beyond what you explicitly store in messages</li>
+                    <li>Messages stored in the time capsule will become publicly viewable after the unlock block height</li>
+                </ul>
+                <p>By using this application, you acknowledge its experimental nature and understand that it should not be used for storing sensitive or important information.</p>
+            `);
+        });
     }
 });
-// Wallet connection system
-let currentWalletType = null;
-
-// Show wallet selection modal
-function showWalletSelectionModal() {
-    const walletModal = document.getElementById('walletSelectionModal');
-    walletModal.classList.add('active');
-    
-    // Set up event listeners
-    document.getElementById('walletModalClose').onclick = closeWalletModal;
-    
-    // Close when clicking outside
-    walletModal.onclick = function(event) {
-        if (event.target === walletModal) {
-            closeWalletModal();
-        }
-    };
-    
-    // Set up wallet option buttons
-    const walletOptions = document.querySelectorAll('.wallet-option');
-    walletOptions.forEach(option => {
-        option.onclick = function() {
-            const walletType = this.getAttribute('data-wallet');
-            connectWallet(walletType);
-            closeWalletModal();
-        };
-    });
-    
-    // Prevent scrolling on the body
-    document.body.style.overflow = 'hidden';
-}
-
-// Close wallet selection modal
-function closeWalletModal() {
-    document.getElementById('walletSelectionModal').classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-// Connect to selected wallet
-async function connectWallet(walletType) {
-    console.log(`Attempting to connect to ${walletType} wallet...`);
-    
-    try {
-        switch(walletType) {
-            case 'unisat':
-                await connectUnisatWallet();
-                break;
-            case 'xverse':
-                await connectXverseWallet();
-                break;
-            case 'okx':
-                await connectOKXWallet();
-                break;
-            case 'leather':
-                await connectLeatherWallet();
-                break;
-            default:
-                throw new Error(`Unsupported wallet type: ${walletType}`);
-        }
-        
-        // If connection was successful, store the wallet type
-        currentWalletType = walletType;
-        
-    } catch (error) {
-        console.error(`Error connecting to ${walletType} wallet:`, error);
-        showModal("Connection Cancelled", `
-            <p>You closed the wallet extension without connecting.</p>
-            <p>If you'd like to use TimeCapsuleContract, please connect your wallet when prompted.</p>
-        `);
-    }
-}
-
-// Connect to Unisat wallet
-async function connectUnisatWallet() {
-    // Check if unisat is defined in window object
-    if (typeof window.unisat === 'undefined') {
-        console.log("Unisat not found in window object.");
-        
-        // Try to detect wallet through alternative methods
-        if (window.bitcoin || window.BitcoinProvider) {
-            console.log("Alternative Bitcoin provider detected");
-            // Use alternative provider if available
-            window.unisat = window.bitcoin || window.BitcoinProvider;
-        } else {
-            // Create a direct request to open the extension
-            console.log("No wallet detected. Attempting to trigger extension via direct request...");
-            
-            // Create a custom event that might trigger extension
-            const walletEvent = new CustomEvent('walletRequest', { detail: { wallet: 'unisat' } });
-            window.dispatchEvent(walletEvent);
-            
-            // Give the extension a moment to respond
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Check again if unisat is now available
-            if (typeof window.unisat === 'undefined') {
-                throw new Error("Connection cancelled. You closed the wallet extension without connecting.");
-            }
-        }
-    }
-    
-    console.log("Unisat detected:", window.unisat.version || "version unknown");
-    
-    // Request connection to wallet with error handling
-    let accounts;
-    try {
-        accounts = await window.unisat.requestAccounts();
-    } catch (connectionError) {
-        console.error("Error during requestAccounts:", connectionError);
-        
-        // Try alternative connection method if first one fails
-        try {
-            console.log("Trying alternative connection method...");
-            accounts = await window.unisat.enable();
-        } catch (altError) {
-            console.error("Alternative connection also failed:", altError);
-            throw new Error("Connection cancelled. You closed the wallet extension without connecting.");
-        }
-    }
-    
-    console.log("Connected accounts:", accounts);
-    
-    if (!accounts || accounts.length === 0) {
-        throw new Error("No accounts found in Unisat Wallet. Please ensure you are logged in.");
-    }
-
-    const address = accounts[0];
-    currentAccount = address;
-    
-    // Get network information with fallback
-    let network;
-    try {
-        network = await window.unisat.getNetwork();
-    } catch (networkError) {
-        console.error("Error getting network:", networkError);
-        // Fallback to checking address format
-        network = "unknown";
-    }
-    
-    console.log("Network:", network);
-    
-    // Check if on Signet/Testnet using multiple methods
-    let isSignetOrTestnet = false;
-    
-    // Method 1: Check network value
-    if (network && network !== "unknown") {
-        const networkStr = String(network).toLowerCase();
-        isSignetOrTestnet = networkStr.includes("signet") || networkStr.includes("testnet");
-        console.log("Network check result:", isSignetOrTestnet);
-    }
-    
-    // Method 2: If network check failed or returned unknown, check address format
-    if (!isSignetOrTestnet || network === "unknown") {
-        isSignetOrTestnet = isTestnetAddress(address);
-        console.log("Address format check result:", isSignetOrTestnet);
-    }
-    
-    console.log("Final network determination:", isSignetOrTestnet, "Network value:", network, "Address:", address);
-    
-    if (!isSignetOrTestnet) {
-        throw new Error("You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
-    }
-    
-    // Successfully connected to Signet/Testnet
-    walletConnected = true;
-    updateWalletUI(true, address);
-    console.log("Wallet connected successfully to Signet/Testnet.");
-}
-
-// Connect to Xverse wallet
-async function connectXverseWallet() {
-    // Check if Xverse is available
-    if (typeof window.XverseProviders === 'undefined') {
-        throw new Error("Xverse wallet not found. Please install the Xverse browser extension.");
-    }
-    
-    try {
-        // Request connection to Xverse wallet
-        const accounts = await window.XverseProviders.BitcoinProvider.request('getAddresses');
-        
-        if (!accounts || accounts.length === 0 || !accounts.addresses || accounts.addresses.length === 0) {
-            throw new Error("No accounts found in Xverse Wallet.");
-        }
-        
-        // Get the first address (testnet)
-        const testnetAddresses = accounts.addresses.filter(addr => addr.type === 'testnet');
-        if (!testnetAddresses || testnetAddresses.length === 0) {
-            throw new Error("No testnet addresses found. Please switch to Signet in Xverse wallet.");
-        }
-        
-        const address = testnetAddresses[0].address;
-        currentAccount = address;
-        
-        // Check if address is a testnet/signet address
-        if (!isTestnetAddress(address)) {
-            throw new Error("You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
-        }
-        
-        // Successfully connected
-        walletConnected = true;
-        updateWalletUI(true, address);
-        console.log("Xverse wallet connected successfully to Signet/Testnet.");
-        
-    } catch (error) {
-        console.error("Error connecting to Xverse wallet:", error);
-        throw error;
-    }
-}
-
-// Connect to OKX wallet
-async function connectOKXWallet() {
-    // Check if OKX wallet is available
-    if (typeof window.okxwallet === 'undefined') {
-        throw new Error("OKX wallet not found. Please install the OKX wallet browser extension.");
-    }
-    
-    try {
-        // Request connection to OKX wallet
-        const accounts = await window.okxwallet.bitcoin.connect();
-        
-        if (!accounts || accounts.length === 0) {
-            throw new Error("No accounts found in OKX Wallet.");
-        }
-        
-        const address = accounts[0];
-        currentAccount = address;
-        
-        // Check if address is a testnet/signet address
-        if (!isTestnetAddress(address)) {
-            throw new Error("You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
-        }
-        
-        // Successfully connected
-        walletConnected = true;
-        updateWalletUI(true, address);
-        console.log("OKX wallet connected successfully to Signet/Testnet.");
-        
-    } catch (error) {
-        console.error("Error connecting to OKX wallet:", error);
-        throw error;
-    }
-}
-
-// Connect to Leather wallet
-async function connectLeatherWallet() {
-    // Check if Leather wallet is available
-    if (typeof window.btc === 'undefined') {
-        throw new Error("Leather wallet not found. Please install the Leather wallet browser extension.");
-    }
-    
-    try {
-        // Request connection to Leather wallet
-        const accounts = await window.btc.request('getAddresses');
-        
-        if (!accounts || accounts.length === 0) {
-            throw new Error("No accounts found in Leather Wallet.");
-        }
-        
-        const address = accounts[0];
-        currentAccount = address;
-        
-        // Check if address is a testnet/signet address
-        if (!isTestnetAddress(address)) {
-            throw new Error("You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.");
-        }
-        
-        // Successfully connected
-        walletConnected = true;
-        updateWalletUI(true, address);
-        console.log("Leather wallet connected successfully to Signet/Testnet.");
-        
-    } catch (error) {
-        console.error("Error connecting to Leather wallet:", error);
-        throw error;
-    }
-}
 
 // Disconnect wallet
 function disconnectWallet() {
@@ -1238,128 +1047,13 @@ function disconnectWallet() {
     console.log("Wallet disconnected");
 }
 
-// Update the connect wallet button to show wallet selection modal
-document.getElementById("connectWallet").removeEventListener("click", connectUnisatWallet);
-document.getElementById("connectWallet").addEventListener("click", function() {
-    if (walletConnected) {
-        disconnectWallet();
-    } else {
-        showWalletSelectionModal();
+// Function to unlock a message (placeholder)
+function unlockMessage(txId) {
+    if (!walletConnected) {
+        showModal("Wallet Required", "<p>Please connect your wallet first to unlock this message.</p>");
+        return;
     }
-});
-// Terms and Privacy Policy popup
-document.addEventListener('DOMContentLoaded', function() {
-    const tcppLink = document.getElementById('tcppLink');
-    if (tcppLink) {
-        tcppLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            showModal("Terms & Privacy Policy", `
-                <p><strong>Experimental Project Notice</strong></p>
-                <p>This Bitcoin Time Capsule Contract is an experimental project running on Bitcoin Signet (testnet).</p>
-                <p>Important information:</p>
-                <ul>
-                    <li>This is a demonstration project only</li>
-                    <li>No real Bitcoin is used or stored</li>
-                    <li>All data is stored on the Signet testnet blockchain</li>
-                    <li>No personal data is collected beyond what you explicitly store in messages</li>
-                    <li>Messages stored in the time capsule will become publicly viewable after the unlock block height</li>
-                </ul>
-                <p>By using this application, you acknowledge its experimental nature and understand that it should not be used for storing sensitive or important information.</p>
-            `);
-        });
-    }
-});
-// Move the Terms & Privacy Policy link handler to the wallet selection modal
-document.addEventListener('DOMContentLoaded', function() {
-    const tcppLink = document.getElementById('tcppLink');
-    if (tcppLink) {
-        tcppLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            showModal("Terms & Privacy Policy", `
-                <p><strong>Experimental Project Notice</strong></p>
-                <p>This Bitcoin Time Capsule Contract is an experimental project running on Bitcoin Signet (testnet).</p>
-                <p>Important information:</p>
-                <ul>
-                    <li>This is a demonstration project only</li>
-                    <li>No real Bitcoin is used or stored</li>
-                    <li>All data is stored on the Signet testnet blockchain</li>
-                    <li>No personal data is collected beyond what you explicitly store in messages</li>
-                    <li>Messages stored in the time capsule will become publicly viewable after the unlock block height</li>
-                </ul>
-                <p>By using this application, you acknowledge its experimental nature and understand that it should not be used for storing sensitive or important information.</p>
-            `);
-        });
-    }
-});
-// Function to copy donation address
-function copyDonationAddress() {
-    const address = "bc1qyetzzylgkyq6rcqx4uu9jyrhzs0ume44t9rfrw";
-    navigator.clipboard.writeText(address).then(() => {
-        // Create a temporary "Copied" notification
-        const notification = document.createElement('div');
-        notification.className = 'copy-notification';
-        notification.textContent = 'Copied';
-        
-        // Add it near the donation address
-        const donationAddress = document.querySelector('.donation-address');
-        donationAddress.appendChild(notification);
-        
-        // Trigger the animation
-        setTimeout(() => {
-            notification.classList.add('show');
-        }, 10);
-        
-        // Remove after animation completes
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    donationAddress.removeChild(notification);
-                }
-            }, 300); // Wait for fade out animation
-        }, 1200);
-    }).catch(err => {
-        console.error('Failed to copy address: ', err);
-    });
+    
+    // In a real implementation, this would interact with the blockchain
+    showModal("Unlocking Message", `<p>Attempting to unlock message with transaction ID: ${txId.substring(0, 10)}...</p><p>This feature is not yet implemented in this demo.</p>`);
 }
-// Mobile fix for wallet connection and scrolling issues
-document.addEventListener('DOMContentLoaded', function() {
-    // Force check for wallet connection elements
-    setTimeout(function() {
-        const connectWalletBtn = document.getElementById('connectWallet');
-        if (connectWalletBtn) {
-            // Re-attach event listener
-            connectWalletBtn.addEventListener('click', function() {
-                if (walletConnected) {
-                    disconnectWallet();
-                } else {
-                    showWalletSelectionModal();
-                }
-            });
-            console.log("Wallet connect button re-initialized");
-        } else {
-            console.warn("Wallet connect button not found");
-        }
-        
-        // Ensure the page is scrollable
-        document.body.style.height = 'auto';
-        document.body.style.overflow = 'auto';
-        
-        // Check if footer is in viewport
-        const footer = document.querySelector('footer');
-        if (footer) {
-            // Calculate if footer is visible
-            const rect = footer.getBoundingClientRect();
-            const isVisible = rect.top <= window.innerHeight;
-            
-            if (!isVisible) {
-                console.warn("Footer may not be visible, adjusting page height");
-                // Add extra space to ensure scrollability
-                const extraSpace = document.createElement('div');
-                extraSpace.style.height = '100px';
-                extraSpace.style.width = '100%';
-                document.body.appendChild(extraSpace);
-            }
-        }
-    }, 1000);
-});
