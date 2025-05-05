@@ -48,7 +48,10 @@
                             <h3 class="alert-title">🚨 Important: Signet BTC Only!</h3>
                             <p class="alert-text">
                                 This contract operates on <strong>Bitcoin Signet (testnet)</strong>, not real BTC.
-                                You can request free Signet BTC from the <a href="https://signetfaucet.com/" target="_blank">Bitcoin Signet Faucet</a>.
+                                You can request free Signet BTC from the <a href="https://signet25.bublina.eu.org" target="_blank">Bitcoin Signet Faucet</a>.
+                            </p>
+                            <p class="alert-text">
+                                <strong>Resilient Design:</strong> This application uses multiple indexers and local caching to ensure reliable operation even during high traffic periods.
                             </p>
                         </div>
 
@@ -88,32 +91,44 @@
                         <p class="fee-note">Storage Fee: 0.0001 Signet BTC per message</p>
                     </article>
                     <article class="card">
+                        <h2 class="card-title">🐦 Blast it to the bird app!</h2>
+                        <div class="twitter-carousel">
+                            <div class="carousel-container">
+                                <div class="carousel-slides" id="twitterCarousel">
+                                    <!-- Slides will be populated by JavaScript -->
+                                </div>
+                                <button class="carousel-nav prev" id="prevSlide" aria-label="Previous slide">❮</button>
+                                <button class="carousel-nav next" id="nextSlide" aria-label="Next slide">❯</button>
+                                <div class="carousel-indicators" id="carouselIndicators">
+                                    <!-- Indicators will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="card">
                         <h2 class="card-title">🙏 Special Thanks</h2>
                         <div class="thanks-content">
                             <p>Special thanks to <a href="https://twitter.com/rodarmor" target="_blank">Casey Rodarmor</a>—inventor of Ordinals.</p>
                             
                             <h3 class="thanks-subtitle">Bitcoin wallet and API providers:</h3>
-                            <div class="wallet-links">
-                                <a href="https://unisat.io/download" target="_blank" class="wallet-link">
-                                    <img src="unisat-logo.png" alt="Unisat" class="wallet-icon">
-                                    <span>Unisat</span>
-                                    <small>Official desktop & mobile download</small>
-                                </a>
-                                <a href="https://www.xverse.app/download" target="_blank" class="wallet-link">
-                                    <img src="xverse-logo.png" alt="Xverse" class="wallet-icon">
-                                    <span>Xverse</span>
-                                    <small>Official desktop & mobile download</small>
-                                </a>
-                                <a href="https://www.okx.com/web3/wallet" target="_blank" class="wallet-link">
-                                    <img src="okx-logo.png" alt="OKX" class="wallet-icon">
-                                    <span>OKX</span>
-                                    <small>Official desktop & mobile download</small>
-                                </a>
-                                <a href="https://leather.io/install" target="_blank" class="wallet-link">
-                                    <img src="leather-logo.png" alt="Leather" class="wallet-icon">
-                                    <span>Leather</span>
-                                    <small>Official desktop & mobile download</small>
-                                </a>
+                            <div class="wallet-links-compact">
+                                <div class="wallet-link-row">
+                                    <img src="unisat-logo.png" alt="Unisat" class="wallet-icon-small">
+                                    <a href="https://unisat.io/download" target="_blank">Unisat Wallet</a>
+                                </div>
+                                <div class="wallet-link-row">
+                                    <img src="xverse-logo.png" alt="Xverse" class="wallet-icon-small">
+                                    <a href="https://www.xverse.app/download" target="_blank">Xverse Wallet</a>
+                                </div>
+                                <div class="wallet-link-row">
+                                    <img src="okx-logo.png" alt="OKX" class="wallet-icon-small">
+                                    <a href="https://www.okx.com/web3/wallet" target="_blank">OKX Wallet</a>
+                                </div>
+                                <div class="wallet-link-row">
+                                    <img src="leather-logo.png" alt="Leather" class="wallet-icon-small">
+                                    <a href="https://leather.io/install" target="_blank">Leather Wallet</a>
+                                </div>
                             </div>
                             
                             <p>Special appreciation to <a href="https://bestinslot.xyz/" target="_blank">BestInSlot</a> for providing API support.</p>
@@ -168,6 +183,14 @@
 
                     <article id="messageSection" class="card">
                         <h2 class="card-title">✉ Store Your Message</h2>
+                        <div class="alert">
+                            <h3 class="alert-title">🔒 About Message Security</h3>
+                            <p class="alert-text">
+                                <strong>Important:</strong> Messages are encoded with Base64, not encrypted. 
+                                While they remain unreadable until the unlock block height is reached, 
+                                they will be publicly visible to anyone afterward.
+                            </p>
+                        </div>
                         <textarea id="message" class="message-input" placeholder="Write your message here..."></textarea>
                         <div class="char-counter"><span id="charCount">0</span>/150 characters (<span id="byteCount">0</span>/80 bytes)</div>
                         <button onclick="encryptMessage()" class="btn btn-primary btn-full">Encrypt & Generate Transaction</button>
@@ -277,5 +300,7 @@
     </div>
     
     <script src="script.js"></script>
+    <script src="twitter-carousel.js"></script>
+    <script src="https://unpkg.com/sats-connect@1.2.0"></script>
 </body>
 </html>

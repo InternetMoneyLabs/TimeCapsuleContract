@@ -142,7 +142,7 @@ function waitForWallet(walletType, timeout = 3000) {
         
         // Check if wallet is already available
         if (walletType === 'unisat' && window.unisat) walletProvider = window.unisat;
-        if (walletType === 'xverse' && window.XverseProviders && window.XverseProviders.BitcoinProvider) walletProvider = window.XverseProviders.BitcoinProvider;
+        if (walletType === 'xverse' && window.SatsConnect) walletProvider = window.SatsConnect;
         if (walletType === 'okx' && window.okxwallet && window.okxwallet.bitcoin) walletProvider = window.okxwallet.bitcoin;
         if (walletType === 'leather' && window.btc) walletProvider = window.btc;
         
@@ -154,7 +154,7 @@ function waitForWallet(walletType, timeout = 3000) {
         let timer = null;
         const interval = setInterval(() => {
             if (walletType === 'unisat' && window.unisat) walletProvider = window.unisat;
-            if (walletType === 'xverse' && window.XverseProviders && window.XverseProviders.BitcoinProvider) walletProvider = window.XverseProviders.BitcoinProvider;
+            if (walletType === 'xverse' && window.SatsConnect) walletProvider = window.SatsConnect;
             if (walletType === 'okx' && window.okxwallet && window.okxwallet.bitcoin) walletProvider = window.okxwallet.bitcoin;
             if (walletType === 'leather' && window.btc) walletProvider = window.btc;
             
@@ -283,19 +283,40 @@ async function connectWallet(walletType) {
                 if (!provider) throw new Error("Xverse wallet not found. Please install the Xverse browser extension.");
                 
                 try {
-                    const xverseAccounts = await provider.request('getAddresses');
-                    if (!xverseAccounts || !xverseAccounts.addresses || xverseAccounts.addresses.length === 0) {
-                        throw new Error("No accounts found in Xverse Wallet.");
-                    }
+                    // Using the Sats Connect library approach
+                    const getAddressOptions = {
+                        payload: {
+                            purposes: ['payment'],
+                            message: 'Bitcoin Time Capsule needs your Signet address',
+                            network: {
+                                type: 'testnet'
+                            }
+                        },
+                        onFinish: (response) => {
+                            if (response && response.addresses && response.addresses.length > 0) {
+                                const address = response.addresses[0].address;
+                                accounts = [address];
+                                network = 'testnet';
+                                
+                                // Continue with wallet connection
+                                finishWalletConnection(accounts[0], network, walletType);
+                            } else {
+                                throw new Error("No testnet addresses found in Xverse.");
+                            }
+                        },
+                        onCancel: () => {
+                            throw new Error("Xverse wallet connection was cancelled.");
+                        },
+                        onError: (error) => {
+                            throw new Error(`Xverse connection failed: ${error.message || "Unknown error"}`);
+                        }
+                    };
                     
-                    // Find a testnet address
-                    const testnetAddresses = xverseAccounts.addresses.filter(addr => addr.type === 'testnet');
-                    if (!testnetAddresses || testnetAddresses.length === 0) {
-                        throw new Error("No testnet addresses found in Xverse. Please switch to Testnet/Signet in your wallet.");
-                    }
+                    // Call the getAddress method
+                    provider.getAddress(getAddressOptions);
                     
-                    accounts = [testnetAddresses[0].address];
-                    network = 'testnet'; // Assume testnet if testnet address found
+                    // Return early as the connection will be handled in the callbacks
+                    return;
                 } catch (error) {
                     throw new Error(`Xverse connection failed: ${error.message || "Unknown error"}`);
                 }
@@ -369,11 +390,44 @@ async function connectWallet(walletType) {
     }
 }
 
-// Function to encrypt messages locally in the browser
+// Helper function to finish wallet connection after async callbacks
+function finishWalletConnection(address, network, walletType) {
+    try {
+        currentAccount = address;
+        
+        // Check if on Signet/Testnet
+        let isSignetOrTestnet = false;
+        if (network && network !== "unknown") {
+            const networkStr = String(network).toLowerCase();
+            isSignetOrTestnet = networkStr.includes("signet") || networkStr.includes("testnet");
+        }
+        if (!isSignetOrTestnet) {
+            isSignetOrTestnet = isTestnetAddress(address);
+        }
+        
+        if (!isSignetOrTestnet) {
+            showModal("Connection Error", "<p>You are NOT on Bitcoin Signet! Please switch your wallet network to Signet and try again.</p>");
+            updateWalletUI(false);
+            return;
+        }
+        
+        // Successfully connected
+        walletConnected = true;
+        currentWalletType = walletType;
+        updateWalletUI(true, address);
+        console.log(`${walletType} wallet connected successfully to Signet/Testnet.`);
+    } catch (error) {
+        console.error(`Error finishing wallet connection:`, error);
+        showModal("Connection Error", `<p>${error.message}</p>`);
+        updateWalletUI(false);
+    }
+}
+
+// Function to encode messages locally in the browser
 function encryptMessage() {
     const message = document.getElementById("message").value;
     if (!message) {
-        showModal("Empty Message", "<p>Please enter a message to encrypt.</p>");
+        showModal("Empty Message", "<p>Please enter a message to encode.</p>");
         return;
     }
     
@@ -415,36 +469,40 @@ function encryptMessage() {
     }
 
     try {
-        // Simple encryption logic (for demonstration purposes)
-        const encryptedMessage = btoa(message); // Base64 encoding
-        document.getElementById("encryptedMessageOutput").innerText = encryptedMessage;
-        console.log("Encrypted Message:", encryptedMessage);
+        // Base64 encoding (not actual encryption)
+        const encodedMessage = btoa(message); // Base64 encoding
+        document.getElementById("encryptedMessageOutput").innerText = encodedMessage;
+        console.log("Encoded Message:", encodedMessage);
 
         // Generate transaction data
         const txData = {
-            message: encryptedMessage,
+            message: encodedMessage,
             timestamp: Date.now(),
             unlockDate: new Date(Date.now() + (CONTRACT_CONFIG.unlockDays * 24 * 60 * 60 * 1000)).toISOString(),
             fee: CONTRACT_CONFIG.feeAmount
         };
         
         document.getElementById("output").innerHTML = `
+            <div class="alert">
+                <strong>Note:</strong> Messages are encoded with Base64, not encrypted. 
+                They will be readable by anyone once the block height is reached.
+            </div>
             <strong>Transaction Details:</strong><br>
             Fee: ${CONTRACT_CONFIG.feeAmount} Signet BTC<br>
             Recipient: ${CONTRACT_CONFIG.feeRecipient.substring(0, 6)}...${CONTRACT_CONFIG.feeRecipient.substring(CONTRACT_CONFIG.feeRecipient.length - 4)}<br>
             Unlock Date: ${new Date(txData.unlockDate).toLocaleDateString()}<br>
-            Message Size: ${encryptedMessage.length} bytes (${sizeInfo.utf8Size} UTF-8 bytes)
+            Message Size: ${encodedMessage.length} bytes (${sizeInfo.utf8Size} UTF-8 bytes)
         `;
 
-        // Display the encryption result
+        // Display the encoding result
         document.getElementById("encryptionResult").style.display = "block";
         
         // Store transaction data for later use
         window.txData = txData;
         
     } catch (error) {
-        console.error("Error encrypting message:", error);
-        showModal("Encryption Error", "<p>Failed to encrypt the message. Please try again.</p>");
+        console.error("Error encoding message:", error);
+        showModal("Encoding Error", "<p>Failed to encode the message. Please try again.</p>");
     }
 }
 
@@ -473,17 +531,76 @@ function addNewMessageToList(txId) {
     switchTab('storedTab', document.querySelector('.tab-btn[onclick*="storedTab"]'));
 }
 
-// Fetch current block height from an API
+// Fetch current block height from an API with localStorage caching
 async function getCurrentBlockHeight() {
-    try {
-        // Using mempool.space API for Signet
-        const response = await fetch('https://mempool.space/signet/api/blocks/tip/height');
-        const blockHeight = await response.text();
-        return parseInt(blockHeight);
-    } catch (error) {
-        console.error("Error fetching block height:", error);
-        return null;
+    // Check localStorage cache first (30 minute cache)
+    const cachedData = localStorage.getItem('blockHeightCache');
+    if (cachedData) {
+        try {
+            const cache = JSON.parse(cachedData);
+            const cacheAge = Date.now() - cache.timestamp;
+            // Use cache if less than 30 minutes old
+            if (cacheAge < 30 * 60 * 1000) {
+                console.log("Using cached block height:", cache.blockHeight);
+                return cache.blockHeight;
+            }
+        } catch (e) {
+            console.warn("Error parsing cached block height:", e);
+            // Continue to fetch fresh data if cache parsing fails
+        }
     }
+
+    // API endpoints in order of preference
+    const apis = [
+        // Hiro API (Stacks blockchain indexer with Bitcoin data)
+        'https://api.hiro.so/ordinals/v1/stats',
+        // Traditional Bitcoin APIs
+        'https://mempool.space/signet/api/blocks/tip/height',
+        'https://blockstream.info/signet/api/blocks/tip/height'
+    ];
+    
+    for (const api of apis) {
+        try {
+            const response = await fetch(api, { 
+                timeout: 5000,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) continue;
+            
+            let blockHeight;
+            
+            // Parse response based on API format
+            if (api.includes('hiro.so')) {
+                // Hiro API returns JSON with different structure
+                const data = await response.json();
+                blockHeight = data.btcBlockHeight || data.latest_block_height;
+            } else {
+                // Other APIs return plain text
+                const text = await response.text();
+                blockHeight = parseInt(text);
+            }
+            
+            if (blockHeight && !isNaN(blockHeight)) {
+                // Cache the result in localStorage
+                const cacheData = {
+                    blockHeight: blockHeight,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem('blockHeightCache', JSON.stringify(cacheData));
+                
+                return blockHeight;
+            }
+        } catch (error) {
+            console.warn(`Error fetching from ${api}:`, error);
+            // Continue to next API
+        }
+    }
+    
+    console.error("All block height APIs failed");
+    return null;
 }
 
 // Update block height information on the page
@@ -492,6 +609,7 @@ async function updateBlockHeightInfo() {
     const blocksRemainingElement = document.getElementById("blocksRemaining");
     const progressBar = document.getElementById("progressBar");
     const unlockBlockHeightElement = document.getElementById("unlockBlockHeight");
+    const blockStatus = document.getElementById("blockStatus");
     
     // Set unlock block height from config
     if (unlockBlockHeightElement) {
@@ -523,28 +641,97 @@ async function updateBlockHeightInfo() {
             startRealTimeCountdown(remainingBlocks);
             
         } else {
-            currentBlockHeightElement.innerText = "Unable to fetch";
+            // Try to use last known block height from cache if API calls fail
+            const cachedData = localStorage.getItem('blockHeightCache');
+            if (cachedData) {
+                try {
+                    const cache = JSON.parse(cachedData);
+                    const cacheAge = Date.now() - cache.timestamp;
+                    const cacheAgeMinutes = Math.floor(cacheAge / (60 * 1000));
+                    
+                    currentBlockHeightElement.innerText = `${cache.blockHeight.toLocaleString()} (cached ${cacheAgeMinutes}m ago)`;
+                    
+                    const remainingBlocks = CONTRACT_CONFIG.unlockBlockHeight - cache.blockHeight;
+                    blocksRemainingElement.innerText = remainingBlocks > 0 ? 
+                        `~${remainingBlocks.toLocaleString()} (estimate)` : "0";
+                    
+                    // Update progress bar with cached data
+                    const startBlock = 250567;
+                    const totalBlocks = CONTRACT_CONFIG.unlockBlockHeight - startBlock;
+                    const completedBlocks = cache.blockHeight - startBlock;
+                    const progressPercentage = Math.min(100, Math.max(0, (completedBlocks / totalBlocks) * 100));
+                    
+                    if (progressBar) {
+                        progressBar.style.width = `${progressPercentage}%`;
+                    }
+                    
+                    // Update countdown with cached data
+                    updateCountdown(remainingBlocks);
+                    startRealTimeCountdown(remainingBlocks);
+                    
+                    if (blockStatus) {
+                        blockStatus.innerHTML = `
+                            <div class="status-indicator warning">
+                                <p>⚠️ Using cached block height data from ${cacheAgeMinutes} minutes ago</p>
+                                <p>Live block height information is currently unavailable</p>
+                            </div>
+                        `;
+                    }
+                    
+                    return; // Exit early as we've handled the display with cached data
+                } catch (e) {
+                    console.warn("Error using cached block height:", e);
+                    // Fall through to error handling if cache use fails
+                }
+            }
+            
+            // If no cache or cache use failed
+            currentBlockHeightElement.innerText = "Unavailable";
             blocksRemainingElement.innerText = "Unknown";
             
-            // Set countdown to unknown
-            const countdownDays = document.getElementById("countdownDays");
-            const countdownHours = document.getElementById("countdownHours");
-            const countdownMinutes = document.getElementById("countdownMinutes");
-            const countdownSeconds = document.getElementById("countdownSeconds");
+            if (blockStatus) {
+                blockStatus.innerHTML = `
+                    <div class="status-indicator error">
+                        <p>⚠️ Block height information is currently unavailable</p>
+                        <p>Please check your connection and try again later</p>
+                    </div>
+                `;
+            }
             
-            if (countdownDays) countdownDays.innerText = "--";
-            if (countdownHours) countdownHours.innerText = "--";
-            if (countdownMinutes) countdownMinutes.innerText = "--";
-            if (countdownSeconds) countdownSeconds.innerText = "--";
+            // Set countdown to unknown
+            updateCountdownToUnknown();
         }
     } catch (error) {
         console.error("Error updating block height info:", error);
         currentBlockHeightElement.innerText = "Error";
         blocksRemainingElement.innerText = "Error";
+        
+        if (blockStatus) {
+            blockStatus.innerHTML = `
+                <div class="status-indicator error">
+                    <p>⚠️ Error retrieving block height information</p>
+                    <p>Please try again later</p>
+                </div>
+            `;
+        }
+        
+        updateCountdownToUnknown();
     }
     
-    // Schedule next update in 5 minutes
+    // Schedule next update in 5 minutes (reduced frequency to limit API calls)
     setTimeout(updateBlockHeightInfo, 5 * 60 * 1000);
+}
+
+function updateCountdownToUnknown() {
+    const countdownDays = document.getElementById("countdownDays");
+    const countdownHours = document.getElementById("countdownHours");
+    const countdownMinutes = document.getElementById("countdownMinutes");
+    const countdownSeconds = document.getElementById("countdownSeconds");
+    
+    if (countdownDays) countdownDays.innerText = "--";
+    if (countdownHours) countdownHours.innerText = "--";
+    if (countdownMinutes) countdownMinutes.innerText = "--";
+    if (countdownSeconds) countdownSeconds.innerText = "--";
 }
 
 // Load stored messages (in a real implementation, these would come from an API)

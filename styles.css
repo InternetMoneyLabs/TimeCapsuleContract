@@ -865,6 +865,12 @@
     .fee-grid {
       grid-template-columns: repeat(2, 1fr);
     }
+    
+    /* Force single column layout on mobile */
+    .content-grid {
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
+    }
   }
   
   /* Extra small screens */
@@ -930,4 +936,300 @@
     max-height: 400px; /* Default height, will be adjusted by JS */
     overflow-y: auto;
     transition: max-height 0.3s ease;
+}
+
+/* Twitter Carousel Styles */
+.twitter-carousel {
+    margin: var(--space-md) 0;
+    position: relative;
+    width: 100%;
+}
+
+.carousel-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-md);
+    background-color: var(--color-surface-variant);
+    width: 100%;
+}
+
+.carousel-slides {
+    display: flex;
+    transition: transform 0.5s ease;
+    height: 100%;
+    width: 100%;
+}
+
+.carousel-slide {
+    min-width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-md);
+    width: 100%;
+}
+
+.carousel-slide-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.carousel-slide-image {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius-sm);
+    margin: 0 auto var(--space-md);
+    object-fit: contain;
+    max-height: 300px;
+}
+
+.carousel-slide-text {
+    font-size: var(--font-size-md);
+    margin-bottom: var(--space-md);
+    flex-grow: 1;
+    line-height: 1.5;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+.carousel-slide-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+}
+
+.copy-tweet-btn {
+    background-color: #1DA1F2;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: var(--space-sm) var(--space-md);
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.copy-tweet-btn:hover {
+    background-color: #0c85d0;
+    transform: translateY(-2px);
+}
+
+.copy-tweet-btn:active {
+    transform: translateY(0);
+}
+
+.copy-tweet-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.carousel-nav:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-nav:active {
+    transform: translateY(-50%) scale(1);
+}
+
+.carousel-nav.prev {
+    left: 10px;
+}
+
+.carousel-nav.next {
+    right: 10px;
+}
+
+.carousel-indicators {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-xs);
+    margin: var(--space-sm) 0;
+    padding: var(--space-xs) 0;
+}
+
+.carousel-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.carousel-indicator:hover {
+    transform: scale(1.2);
+}
+
+.carousel-indicator.active {
+    background-color: var(--color-primary);
+}
+
+/* Responsive adjustments for carousel */
+@media (max-width: 767px) {
+    .twitter-carousel {
+        margin: var(--space-sm) 0;
+    }
+    
+    .carousel-slide {
+        padding: var(--space-sm);
+    }
+    
+    .carousel-nav {
+        width: 30px;
+        height: 30px;
+        font-size: 16px;
+    }
+    
+    .carousel-slide-image {
+        max-height: 180px;
+    }
+    
+    .carousel-slide-text {
+        font-size: var(--font-size-sm);
+        margin-bottom: var(--space-sm);
+        line-height: 1.3;
+        max-width: 100%;
+    }
+    
+    .copy-tweet-btn {
+        padding: var(--space-xs) var(--space-sm);
+        font-size: var(--font-size-sm);
+    }
+    
+    .carousel-indicators {
+        bottom: 5px;
+    }
+    
+    .carousel-indicator {
+        width: 8px;
+        height: 8px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+    .twitter-carousel {
+        margin: var(--space-xs) 0;
+    }
+    
+    .carousel-container {
+        border-radius: var(--border-radius-sm);
+    }
+    
+    .carousel-slide {
+        padding: var(--space-xs);
+    }
+    
+    .carousel-slide-image {
+        max-height: 120px;
+        margin-bottom: var(--space-xs);
+    }
+    
+    .carousel-slide-text {
+        font-size: var(--font-size-xs);
+        line-height: 1.2;
+        margin-bottom: var(--space-xs);
+    }
+    
+    .carousel-nav {
+        width: 25px;
+        height: 25px;
+        font-size: 14px;
+    }
+    
+    .carousel-indicators {
+        gap: 4px;
+        margin-top: 4px;
+    }
+    
+    .carousel-indicator {
+        width: 6px;
+        height: 6px;
+    }
+    
+    .copy-tweet-btn {
+        padding: 4px 8px;
+        font-size: var(--font-size-xs);
+    }
+    
+    .copy-tweet-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+}
+.carousel-slide-text.full-text {
+    display: block;
+}
+
+.carousel-slide-text.short-text {
+    display: none;
+}
+/* Wallet Links - Compact Version */
+.wallet-links-compact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.wallet-link-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+}
+
+.wallet-icon-small {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.wallet-link-row a {
+  font-weight: 500;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.wallet-link-row a:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+/* Error status indicator */
+.status-indicator.error {
+  background-color: rgba(231, 76, 60, 0.2);
+  border-left: 4px solid var(--color-error);
+}
+/* Warning status indicator */
+.status-indicator.warning {
+  background-color: rgba(243, 156, 18, 0.2);
+  border-left: 4px solid var(--color-warning);
 }
