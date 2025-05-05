@@ -298,32 +298,7 @@
             </div>
         </div>
     </div>
-    <!-- At the end of your body tag -->
-<script>
-// Check if we're on Safari
-const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-</script>
-<script src="script.js"></script>
-<script src="twitter-carousel.js"></script>
-<script src="https://unpkg.com/sats-connect@1.2.0"></script>
-<script>
-// Ensure carousel initializes after everything is loaded
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(function() {
-        if (typeof initTwitterCarousel === 'function') {
-            initTwitterCarousel();
-        }
-    }, 1000);
-} else {
-    window.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-            if (typeof initTwitterCarousel === 'function') {
-                initTwitterCarousel();
-            }
-        }, 1000);
-    });
-}
-</script>
+    
     <script src="script.js"></script>
     <script src="twitter-carousel.js"></script>
     <script src="https://unpkg.com/sats-connect@1.2.0"></script>

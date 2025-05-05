@@ -1,31 +1,3 @@
-/* Force Safari to properly apply styles */
-@media not all and (min-resolution:.001dpcm) { 
-    @supports (-webkit-appearance:none) {
-        .carousel-slides {
-            display: block !important;
-        }
-        
-        .carousel-slide {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-        
-        .carousel-slide.active {
-            opacity: 1;
-            z-index: 1;
-        }
-        
-        .copy-tweet-btn {
-            background-color: #1DA1F2 !important;
-            color: white !important;
-            border: none !important;
-        }
-    }
-}
 /* ===== VARIABLES ===== */
 :root {
     /* Colors */
@@ -1054,11 +1026,6 @@
     transform: translateY(0);
 }
 
-.copy-tweet-btn svg {
-    width: 16px;
-    height: 16px;
-}
-
 .carousel-nav {
     position: absolute;
     top: 50%;
@@ -1206,11 +1173,6 @@
     .copy-tweet-btn {
         padding: 4px 8px;
         font-size: var(--font-size-xs);
-    }
-    
-    .copy-tweet-btn svg {
-        width: 12px;
-        height: 12px;
     }
 }
 .carousel-slide-text.full-text {
