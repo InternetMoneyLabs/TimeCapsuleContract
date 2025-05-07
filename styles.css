@@ -1130,7 +1130,7 @@
 }
 
 /* Extra small screens */
-@media (max-width: 320px) {
+@media (max-width: 480px) {
     .twitter-carousel {
         margin: var(--space-xs) 0;
     }
@@ -1222,4 +1222,106 @@
 .status-indicator.warning {
   background-color: rgba(243, 156, 18, 0.2);
   border-left: 4px solid var(--color-warning);
+}
+/* Mobile Responsiveness Fixes */
+
+/* Fix for viewport issues */
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Fix for carousel container */
+.carousel-container {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Fix for carousel slides */
+.carousel-slides {
+  display: flex;
+  transition: transform 0.5s ease;
+  width: 100%;
+}
+
+.carousel-slide {
+  min-width: 100%;
+  width: 100%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* Fix for carousel content */
+.carousel-slide-content {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Fix for carousel images */
+.carousel-slide-image {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Additional mobile fixes */
+@media (max-width: 767px) {
+  /* Ensure container doesn't overflow */
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 10px;
+    padding-right: 10px;
+    box-sizing: border-box;
+  }
+  
+  /* Fix for card padding on mobile */
+  .card {
+    padding: 15px;
+    box-sizing: border-box;
+  }
+  
+  /* Fix for Twitter carousel on mobile */
+  .twitter-carousel {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  /* Ensure buttons don't overflow */
+  .copy-tweet-btn {
+    max-width: 100%;
+    white-space: nowrap;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  /* Further reduce padding */
+  .container {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  
+  .card {
+    padding: 12px;
+  }
+  
+  /* Ensure carousel navigation doesn't overflow */
+  .carousel-nav {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+  }
+  
+  .carousel-nav.prev {
+    left: 5px;
+  }
+  
+  .carousel-nav.next {
+    right: 5px;
+  }
 }
