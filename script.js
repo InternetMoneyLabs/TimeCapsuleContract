@@ -23,6 +23,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize block height and countdown
     initBlockHeightAndCountdown();
+    
+    // Initialize Twitter carousel
+    initTwitterCarousel();
+});
+    
+    // Initialize modal handlers
+    initModalHandlers();
+    
+    // Initialize block height and countdown
+    initBlockHeightAndCountdown();
 });
 
 // ===== WALLET CONNECTION FUNCTIONALITY =====
@@ -1107,6 +1117,60 @@ function adjustCarouselHeight() {
         const images = document.querySelectorAll('.carousel-slide-image');
         images.forEach(img => {
             img.style.maxWidth = '100%';
+            img.style.width = '100%';
+            img.style.height = 'auto';
+            img.style.maxHeight = viewportWidth <= 480 ? '120px' : '180px';
+            img.style.margin = '0 auto var(--space-xs)';
+            img.style.objectFit = 'contain';
+        });
+        
+        // Show shorter text on mobile
+        const fullTexts = document.querySelectorAll('.full-text');
+        const shortTexts = document.querySelectorAll('.short-text');
+        
+        if (viewportWidth <= 480) {
+            fullTexts.forEach(text => text.style.display = 'none');
+            shortTexts.forEach(text => text.style.display = 'block');
+        } else {
+            fullTexts.forEach(text => text.style.display = 'block');
+            shortTexts.forEach(text => text.style.display = 'none');
+        }
+        
+        // Ensure carousel container is properly sized
+        const carouselContainer = document.querySelector('.carousel-container');
+        if (carouselContainer) {
+            carouselContainer.style.width = '100%';
+            carouselContainer.style.maxWidth = '100%';
+            carouselContainer.style.overflowX = 'hidden';
+        }
+        
+        // Ensure carousel slides are properly sized
+        const carouselSlidesContainer = document.getElementById('twitterCarousel');
+        if (carouselSlidesContainer) {
+            carouselSlidesContainer.style.width = `${carouselSlides.length * 100}%`;
+            carouselSlides.forEach(slide => {
+                slide.style.width = `${100 / carouselSlides.length}%`;
+                slide.style.minWidth = `${100 / carouselSlides.length}%`;
+            });
+        }
+    } else {
+        // On desktop, show full text
+        const fullTexts = document.querySelectorAll('.full-text');
+        const shortTexts = document.querySelectorAll('.short-text');
+        
+        fullTexts.forEach(text => text.style.display = 'block');
+        shortTexts.forEach(text => text.style.display = 'none');
+    }
+}
+    
+    // Get viewport width to determine if we're on mobile
+    const viewportWidth = window.innerWidth;
+    
+    // For mobile screens, ensure images are properly sized
+    if (viewportWidth <= 767) {
+        const images = document.querySelectorAll('.carousel-slide-image');
+        images.forEach(img => {
+            img.style.maxWidth = '100%';
             img.style.height = 'auto';
             img.style.maxHeight = viewportWidth <= 480 ? '120px' : '180px';
             img.style.margin = '0 auto var(--space-xs)';
@@ -1131,4 +1195,455 @@ function adjustCarouselHeight() {
         fullTexts.forEach(text => text.style.display = 'block');
         shortTexts.forEach(text => text.style.display = 'none');
     }
+}
+// Fix for carousel not displaying content
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a short time to ensure DOM is fully processed
+    setTimeout(function() {
+        // Get carousel elements
+        const carousel = document.getElementById('twitterCarousel');
+        const carouselContainer = document.querySelector('.carousel-container');
+        
+        if (carousel && carouselContainer) {
+            // Reset any transform that might be hiding the content
+            carousel.style.transform = 'translateX(0)';
+            
+            // Make sure carousel and its slides are visible
+            carousel.style.display = 'flex';
+            carousel.style.visibility = 'visible';
+            carousel.style.opacity = '1';
+            
+            // Ensure container is visible
+            carouselContainer.style.display = 'block';
+            carouselContainer.style.visibility = 'visible';
+            carouselContainer.style.opacity = '1';
+            
+            // Fix carousel slides
+            const slides = carousel.querySelectorAll('.carousel-slide');
+            if (slides.length > 0) {
+                slides.forEach((slide, index) => {
+                    // Make sure each slide is visible
+                    slide.style.display = 'block';
+                    slide.style.visibility = 'visible';
+                    slide.style.opacity = '1';
+                    
+                    // Fix slide content
+                    const content = slide.querySelector('.carousel-slide-content');
+                    if (content) {
+                        content.style.display = 'flex';
+                        content.style.flexDirection = 'column';
+                        content.style.visibility = 'visible';
+                        content.style.opacity = '1';
+                    }
+                    
+                    // Fix images
+                    const img = slide.querySelector('.carousel-slide-image');
+                    if (img) {
+                        img.style.display = 'block';
+                        img.style.visibility = 'visible';
+                        img.style.opacity = '1';
+                        img.style.maxWidth = '100%';
+                        img.style.height = 'auto';
+                        img.style.margin = '0 auto 10px';
+                    }
+                });
+                
+                // Show first slide
+                carousel.style.transform = 'translateX(0)';
+                
+                console.log('Carousel fix applied - slides:', slides.length);
+            } else {
+                console.error('No carousel slides found');
+            }
+            
+            // Force layout recalculation
+            carouselContainer.offsetHeight;
+            
+            // Adjust carousel height
+            adjustCarouselHeight();
+        } else {
+            console.error('Carousel elements not found for fix');
+        }
+    }, 500);
+});
+// Fix for carousel navigation not working
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    // Get carousel elements
+    const carousel = document.getElementById('twitterCarousel');
+    const prevBtn = document.getElementById('prevSlide');
+    const nextBtn = document.getElementById('nextSlide');
+    const indicators = document.querySelectorAll('.carousel-indicator');
+    
+    if (carousel && prevBtn && nextBtn) {
+      let currentSlide = 0;
+      const slides = carousel.querySelectorAll('.carousel-slide');
+      const totalSlides = slides.length;
+      
+      if (totalSlides > 0) {
+        console.log('Setting up carousel navigation for', totalSlides, 'slides');
+        
+        // Function to go to a specific slide
+        function goToSlide(slideIndex) {
+          // Handle wrapping
+          if (slideIndex < 0) {
+            slideIndex = totalSlides - 1;
+          } else if (slideIndex >= totalSlides) {
+            slideIndex = 0;
+          }
+          
+          // Update current slide
+          currentSlide = slideIndex;
+          
+          // Move carousel
+          carousel.style.transform = `translateX(-${currentSlide * 100}%)`;
+          
+          // Update indicators
+          indicators.forEach((indicator, index) => {
+            if (index === currentSlide) {
+              indicator.classList.add('active');
+            } else {
+              indicator.classList.remove('active');
+            }
+          });
+          
+          console.log('Moved to slide', currentSlide);
+        }
+        
+        // Set up navigation buttons
+        prevBtn.onclick = function() {
+          goToSlide(currentSlide - 1);
+        };
+        
+        nextBtn.onclick = function() {
+          goToSlide(currentSlide + 1);
+        };
+        
+        // Set up indicators
+        indicators.forEach((indicator, index) => {
+          indicator.onclick = function() {
+            goToSlide(index);
+          };
+        });
+        
+        // Auto-advance slides every 8 seconds
+        let slideInterval = setInterval(() => {
+          goToSlide(currentSlide + 1);
+        }, 8000);
+        
+        // Pause auto-advance when hovering over carousel
+        const carouselContainer = document.querySelector('.carousel-container');
+        if (carouselContainer) {
+          carouselContainer.addEventListener('mouseenter', () => {
+            clearInterval(slideInterval);
+          });
+          
+          carouselContainer.addEventListener('mouseleave', () => {
+            slideInterval = setInterval(() => {
+              goToSlide(currentSlide + 1);
+            }, 8000);
+          });
+        }
+        
+        // Set up touch support for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        if (carouselContainer) {
+          carouselContainer.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            clearInterval(slideInterval);
+          }, {passive: true});
+          
+          carouselContainer.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+            
+            // Restart auto-advance
+            slideInterval = setInterval(() => {
+              goToSlide(currentSlide + 1);
+            }, 8000);
+          }, {passive: true});
+        }
+        
+        function handleSwipe() {
+          const swipeThreshold = 50; // Minimum distance for a swipe
+          if (touchEndX < touchStartX - swipeThreshold) {
+            // Swipe left - go to next slide
+            goToSlide(currentSlide + 1);
+          } else if (touchEndX > touchStartX + swipeThreshold) {
+            // Swipe right - go to previous slide
+            goToSlide(currentSlide - 1);
+          }
+        }
+        
+        // Initialize the carousel to the first slide
+        goToSlide(0);
+      }
+    }
+  }, 800); // Wait a bit longer to ensure everything is loaded
+});
+// Twitter Carousel Implementation
+function initTwitterCarousel() {
+  console.log('Initializing Twitter carousel');
+  
+  // Get carousel elements
+  const carousel = document.getElementById('twitterCarousel');
+  const prevBtn = document.getElementById('prevSlide');
+  const nextBtn = document.getElementById('nextSlide');
+  const indicators = document.querySelectorAll('.carousel-indicator');
+  
+  if (!carousel || !prevBtn || !nextBtn) {
+    console.error("Carousel elements not found");
+    return;
+  }
+
+  let currentSlide = 0;
+  const slides = carousel.querySelectorAll('.carousel-slide');
+  const totalSlides = slides.length;
+  
+  if (totalSlides === 0) {
+    console.error("No carousel slides found");
+    return;
+  }
+  
+  console.log(`Found ${totalSlides} carousel slides`);
+  
+  // Make sure all images are loaded
+  slides.forEach((slide, index) => {
+    const img = slide.querySelector('.carousel-slide-image');
+    if (img) {
+      img.onload = function() {
+        console.log(`Image ${index + 1} loaded`);
+      };
+      
+      img.onerror = function() {
+        console.error(`Failed to load image ${index + 1}: ${img.src}`);
+        // Set a fallback image or text
+        img.style.display = 'none';
+        const content = slide.querySelector('.carousel-slide-content');
+        if (content) {
+          const fallbackText = document.createElement('p');
+          fallbackText.textContent = `[Image ${index + 1} unavailable]`;
+          fallbackText.style.padding = '20px';
+          fallbackText.style.backgroundColor = '#333';
+          fallbackText.style.color = '#fff';
+          fallbackText.style.textAlign = 'center';
+          content.insertBefore(fallbackText, img.nextSibling);
+        }
+      };
+      
+      // Force reload the image
+      const currentSrc = img.src;
+      img.src = '';
+      img.src = currentSrc;
+    }
+  });
+  
+  // Function to go to a specific slide
+  function goToSlide(slideIndex) {
+    // Handle wrapping
+    if (slideIndex < 0) {
+      slideIndex = totalSlides - 1;
+    } else if (slideIndex >= totalSlides) {
+      slideIndex = 0;
+    }
+    
+    // Update current slide
+    currentSlide = slideIndex;
+    
+    // Move carousel
+    carousel.style.transform = `translateX(-${currentSlide * 100}%)`;
+    
+    // Update indicators
+    indicators.forEach((indicator, index) => {
+      if (index === currentSlide) {
+        indicator.classList.add('active');
+      } else {
+        indicator.classList.remove('active');
+      }
+    });
+    
+    console.log(`Moved to slide ${currentSlide + 1} of ${totalSlides}`);
+  }
+  
+  // Set up navigation buttons
+  if (prevBtn) {
+    prevBtn.onclick = function(e) {
+      e.preventDefault();
+      goToSlide(currentSlide - 1);
+    };
+  }
+  
+  if (nextBtn) {
+    nextBtn.onclick = function(e) {
+      e.preventDefault();
+      goToSlide(currentSlide + 1);
+    };
+  }
+  
+  // Set up indicators
+  indicators.forEach((indicator, index) => {
+    indicator.onclick = function(e) {
+      e.preventDefault();
+      goToSlide(index);
+    };
+  });
+  
+  // Set up copy buttons
+  const copyButtons = document.querySelectorAll('.copy-tweet-btn');
+  copyButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      const tweetText = this.getAttribute('data-tweet');
+      if (!tweetText) {
+        console.error('No tweet text found');
+        return;
+      }
+      
+      navigator.clipboard.writeText(tweetText).then(() => {
+        const originalText = this.textContent;
+        this.textContent = 'Copied!';
+        setTimeout(() => {
+          this.textContent = originalText;
+        }, 2000);
+        
+        // Open Twitter in new tab
+        window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(tweetText), '_blank');
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+        
+        // Fallback method
+        const textarea = document.createElement('textarea');
+        textarea.value = tweetText;
+        textarea.style.position = 'fixed';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        const originalText = this.textContent;
+        this.textContent = 'Copied!';
+        setTimeout(() => {
+          this.textContent = originalText;
+        }, 2000);
+        
+        // Open Twitter in new tab
+        window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(tweetText), '_blank');
+      });
+    });
+  });
+  
+  // Auto-advance slides every 8 seconds
+  let slideInterval = setInterval(() => {
+    goToSlide(currentSlide + 1);
+  }, 8000);
+  
+  // Pause auto-advance when hovering over carousel
+  const carouselContainer = document.querySelector('.carousel-container');
+  if (carouselContainer) {
+    carouselContainer.addEventListener('mouseenter', () => {
+      clearInterval(slideInterval);
+    });
+    
+    carouselContainer.addEventListener('mouseleave', () => {
+      slideInterval = setInterval(() => {
+        goToSlide(currentSlide + 1);
+      }, 8000);
+    });
+    
+    // Add touch support for mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    carouselContainer.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+      clearInterval(slideInterval);
+    }, {passive: true});
+    
+    carouselContainer.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+      
+      // Restart auto-advance
+      slideInterval = setInterval(() => {
+        goToSlide(currentSlide + 1);
+      }, 8000);
+    }, {passive: true});
+    
+    function handleSwipe() {
+      const swipeThreshold = 50; // Minimum distance for a swipe
+      if (touchEndX < touchStartX - swipeThreshold) {
+        // Swipe left - go to next slide
+        goToSlide(currentSlide + 1);
+      } else if (touchEndX > touchStartX + swipeThreshold) {
+        // Swipe right - go to previous slide
+        goToSlide(currentSlide - 1);
+      }
+    }
+  }
+  
+  // Initialize the carousel to the first slide
+  goToSlide(0);
+  
+  // Adjust carousel height
+  adjustCarouselHeight();
+  
+  // Re-adjust on window resize
+  window.addEventListener('resize', function() {
+    adjustCarouselHeight();
+  });
+}
+
+// Function to adjust carousel height based on content
+function adjustCarouselHeight() {
+  const carouselSlides = document.querySelectorAll('.carousel-slide');
+  if (!carouselSlides.length) return;
+  
+  // Get viewport width to determine if we're on mobile
+  const viewportWidth = window.innerWidth;
+  
+  // For mobile screens, ensure images are properly sized
+  if (viewportWidth <= 767) {
+    const images = document.querySelectorAll('.carousel-slide-image');
+    images.forEach(img => {
+      img.style.maxWidth = '100%';
+      img.style.width = 'auto';
+      img.style.height = 'auto';
+      img.style.maxHeight = viewportWidth <= 480 ? '120px' : '180px';
+      img.style.margin = '0 auto var(--space-xs)';
+      img.style.objectFit = 'contain';
+      img.style.display = 'block';
+    });
+    
+    // Show shorter text on mobile
+    const fullTexts = document.querySelectorAll('.full-text');
+    const shortTexts = document.querySelectorAll('.short-text');
+    
+    if (viewportWidth <= 480) {
+      fullTexts.forEach(text => text.style.display = 'none');
+      shortTexts.forEach(text => text.style.display = 'block');
+    } else {
+      fullTexts.forEach(text => text.style.display = 'block');
+      shortTexts.forEach(text => text.style.display = 'none');
+    }
+  } else {
+    // On desktop, show full text
+    const fullTexts = document.querySelectorAll('.full-text');
+    const shortTexts = document.querySelectorAll('.short-text');
+    
+    fullTexts.forEach(text => text.style.display = 'block');
+    shortTexts.forEach(text => text.style.display = 'none');
+    
+    // Ensure images are properly sized
+    const images = document.querySelectorAll('.carousel-slide-image');
+    images.forEach(img => {
+      img.style.maxWidth = '100%';
+      img.style.width = 'auto';
+      img.style.maxHeight = '300px';
+      img.style.margin = '0 auto var(--space-md)';
+      img.style.objectFit = 'contain';
+      img.style.display = 'block';
+    });
+  }
 }
