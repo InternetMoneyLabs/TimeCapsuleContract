@@ -11,9 +11,9 @@
     <link rel="stylesheet" href="styles.css">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' chrome-extension: unpkg.com; style-src 'self' 'unsafe-inline'; connect-src *; img-src 'self' data:;">
 </head>
-<body>
+<body class="theme-solid-hazy">
     <div class="banner">
-        🧪 EXPERIMENTAL: Testnet demo only. Verify URL: https://internetmoneylabs.github.io/TimeCapsuleContract/
+        🧪 EXPERIMENTAL: Testnet demo only. Verify URL: <a href="https://internetmoneylabs.github.io/TimeCapsuleContract/" target="_blank">https://internetmoneylabs.github.io/TimeCapsuleContract/</a>
     </div>
 
     <header class="site-header">
@@ -28,13 +28,11 @@
         </div>
     </header>
 
-    <!-- Spacer div to ensure content is below fixed header -->
     <div class="header-spacer"></div>
 
     <main class="site-main">
         <div class="container">
             <div class="content-grid">
-                <!-- Left Column -->
                 <section class="info-section">
                     <article class="card">
                         <h2 class="card-title">📌 What is TimeCapsuleContract?</h2>
@@ -44,7 +42,7 @@
                             Once unlockable, the first three participants to retrieve messages receive portions of the fees.
                         </p>
 
-                        <div class="alert">
+                        <div class="alert alert-warning">
                             <h3 class="alert-title">🚨 Important: Signet BTC Only!</h3>
                             <p class="alert-text">
                                 This contract operates on <strong>Bitcoin Signet (testnet)</strong>, not real BTC.
@@ -95,14 +93,12 @@
                         <div class="twitter-carousel">
                             <div class="carousel-container">
                                 <div class="carousel-slides" id="twitterCarousel">
-                                    <!-- Manual slides instead of JavaScript population -->
                                     <div class="carousel-slide">
                                         <div class="carousel-slide-content">
                                             <img src="twitter-x.png" alt="Twitter post 1" class="carousel-slide-image">
-                                            <p class="carousel-slide-text full-text">🔒 Just sealed my thoughts in the #Bitcoin Time Capsule using BRC-2.0 tech! 🚀 My message is now forged into the blockchain until block 263527. Win a share of the unlock prize by being among the first to decrypt! #BitcoinTimeCapsule #BRC20</p>
-                                            <p class="carousel-slide-text short-text" style="display: none;">🔒 Just sealed my thoughts in the #Bitcoin Time Capsule using BRC-2.0 tech!... #BitcoinTimeCapsule</p>
+                                            <p class="carousel-slide-text">🔒 Just sealed my thoughts in a #Bitcoin Time Capsule on Signet! 🚀 Unlocks at block 263527. First few unlockers get prizes! Be ready! #BRC20 #Crypto</p>
                                             <div class="carousel-slide-actions">
-                                                <button class="copy-tweet-btn" data-tweet="🔒 Just sealed my thoughts in the #Bitcoin Time Capsule using BRC-2.0 tech! 🚀 My message is now forged into the blockchain until block 263527. Win a share of the unlock prize by being among the first to decrypt! #BitcoinTimeCapsule #BRC20">
+                                                <button class="copy-tweet-btn" data-tweet="🔒 Just sealed my thoughts in a #Bitcoin Time Capsule on Signet! 🚀 Unlocks at block 263527. First few unlockers get prizes! Be ready! #BRC20 #Crypto">
                                                     Copy & Post
                                                 </button>
                                             </div>
@@ -111,10 +107,9 @@
                                     <div class="carousel-slide">
                                         <div class="carousel-slide-content">
                                             <img src="twitter-xi.png" alt="Twitter post 2" class="carousel-slide-image">
-                                            <p class="carousel-slide-text full-text">✨ Bitcoin Time Capsule + BRC-2.0 = digital permanence like never before! 🔐 My encrypted message awaits at block 263527 with prizes for the first unlockers! Create your own blockchain time vault on Signet now! #BitcoinTimeCapsule 💎</p>
-                                            <p class="carousel-slide-text short-text" style="display: none;">✨ Bitcoin Time Capsule + BRC-2.0 = digital permanence like never before!... #BitcoinTimeCapsule</p>
+                                            <p class="carousel-slide-text">Time to send a message to the future via #Bitcoin! ⏳ Using Time Capsule on Signet. Get your wallet ready for block 263527. Prizes inside! 😉 #BitcoinTimeCapsule</p>
                                             <div class="carousel-slide-actions">
-                                                <button class="copy-tweet-btn" data-tweet="✨ Bitcoin Time Capsule + BRC-2.0 = digital permanence like never before! 🔐 My encrypted message awaits at block 263527 with prizes for the first unlockers! Create your own blockchain time vault on Signet now! #BitcoinTimeCapsule 💎">
+                                                <button class="copy-tweet-btn" data-tweet="Time to send a message to the future via #Bitcoin! ⏳ Using Time Capsule on Signet. Get your wallet ready for block 263527. Prizes inside! 😉 #BitcoinTimeCapsule">
                                                     Copy & Post
                                                 </button>
                                             </div>
@@ -123,10 +118,9 @@
                                     <div class="carousel-slide">
                                         <div class="carousel-slide-content">
                                             <img src="twitter-xiii.png" alt="Twitter post 3" class="carousel-slide-image">
-                                            <p class="carousel-slide-text full-text">🧠 My future self will thank me! Just used Bitcoin Time Capsule's BRC-2.0 platform to inscribe an encrypted message that unlocks with prizes at block 263527! 🏆 The future of digital permanence is here! #BitcoinTimeCapsule #Encryption</p>
-                                            <p class="carousel-slide-text short-text" style="display: none;">🧠 My future self will thank me! Just used Bitcoin Time Capsule's BRC-2.0 platform... #BitcoinTimeCapsule</p>
+                                            <p class="carousel-slide-text">Got a secret for block 263527? 🤫 Store it in the #Bitcoin Time Capsule! Running on Signet with BRC-2.0. Unlockers earn fees! Check it out! 👇 #CryptoNews</p>
                                             <div class="carousel-slide-actions">
-                                                <button class="copy-tweet-btn" data-tweet="🧠 My future self will thank me! Just used Bitcoin Time Capsule's BRC-2.0 platform to inscribe an encrypted message that unlocks with prizes at block 263527! 🏆 The future of digital permanence is here! #BitcoinTimeCapsule #Encryption">
+                                                <button class="copy-tweet-btn" data-tweet="Got a secret for block 263527? 🤫 Store it in the #Bitcoin Time Capsule! Running on Signet with BRC-2.0. Unlockers earn fees! Check it out! 👇 #CryptoNews">
                                                     Copy & Post
                                                 </button>
                                             </div>
@@ -135,10 +129,9 @@
                                     <div class="carousel-slide">
                                         <div class="carousel-slide-content">
                                             <img src="twitter-xiiii.png" alt="Twitter post 4" class="carousel-slide-image">
-                                            <p class="carousel-slide-text full-text">🔮 Blockchain magic: My message is now immortalized via Bitcoin Time Capsule's BRC-2.0 contract! 💰 First unlockers at block 263527 share 60% of fees as prizes! Join the inscription revolution on Signet! #BitcoinTimeCapsule #BRC20 🚀</p>
-                                            <p class="carousel-slide-text short-text" style="display: none;">🔮 Blockchain magic: My message is now immortalized via Bitcoin Time Capsule's BRC-2.0 contract!... #BitcoinTimeCapsule</p>
+                                            <p class="carousel-slide-text">Testing out the #Bitcoin Time Capsule on Signet! 🛠️ Write a message, lock it till block 263527. Simple, secure, and rewards unlockers! Pretty cool. 😎 #BitcoinDevelopement</p>
                                             <div class="carousel-slide-actions">
-                                                <button class="copy-tweet-btn" data-tweet="🔮 Blockchain magic: My message is now immortalized via Bitcoin Time Capsule's BRC-2.0 contract! 💰 First unlockers at block 263527 share 60% of fees as prizes! Join the inscription revolution on Signet! #BitcoinTimeCapsule #BRC20 🚀">
+                                                <button class="copy-tweet-btn" data-tweet="Testing out the #Bitcoin Time Capsule on Signet! 🛠️ Write a message, lock it till block 263527. Simple, secure, and rewards unlockers! Pretty cool. 😎 #BitcoinDevelopement">
                                                     Copy & Post
                                                 </button>
                                             </div>
@@ -161,7 +154,7 @@
                         <h2 class="card-title">🙏 Special Thanks</h2>
                         <div class="thanks-content">
                             <p>Special thanks to <a href="https://twitter.com/rodarmor" target="_blank">Casey Rodarmor</a>—inventor of Ordinals.</p>
-                            
+
                             <h3 class="thanks-subtitle">Bitcoin wallet and API providers:</h3>
                             <div class="wallet-links-compact">
                                 <div class="wallet-link-row">
@@ -181,7 +174,7 @@
                                     <a href="https://leather.io/install" target="_blank">Leather Wallet</a>
                                 </div>
                             </div>
-                            
+
                             <p>Special appreciation to <a href="https://bestinslot.xyz/" target="_blank">BestInSlot</a> for providing API support.</p>
                             <p>A huge shoutout to the Ordinals community and OGs for their contributions.</p>
                             <p>Thanks to <a href="https://aws.amazon.com/q/" target="_blank">Amazon Q</a> for assisting in building the project.</p>
@@ -190,7 +183,6 @@
                     </article>
                 </section>
 
-                <!-- Right Column -->
                 <section class="action-section">
                     <article class="card">
                         <h2 class="card-title">⏱️ Time Capsule Status</h2>
@@ -210,7 +202,7 @@
                             </div>
                         </div>
                         <div id="blockStatus" class="status-indicator pending">
-                            <div class="countdown-grid">
+                             <div class="countdown-grid">
                                 <div class="countdown-item">
                                     <span id="countdownDays" class="countdown-value">--</span>
                                     <span class="countdown-label">Days</span>
@@ -234,34 +226,34 @@
 
                     <article id="messageSection" class="card">
                         <h2 class="card-title">✉ Store Your Message</h2>
-                        <div class="alert">
+                        <div class="alert alert-info">
                             <h3 class="alert-title">🔒 About Message Security</h3>
                             <p class="alert-text">
-                                <strong>Important:</strong> Messages are encoded with Base64, not encrypted. 
-                                While they remain unreadable until the unlock block height is reached, 
+                                <strong>Important:</strong> Messages are encoded with Base64, not encrypted.
+                                While they remain unreadable until the unlock block height is reached,
                                 they will be publicly visible to anyone afterward.
                             </p>
                         </div>
                         <textarea id="message" class="message-input" placeholder="Write your message here..."></textarea>
                         <div class="char-counter"><span id="charCount">0</span>/150 characters (<span id="byteCount">0</span>/80 bytes)</div>
-                        <button onclick="encryptMessage()" class="btn btn-primary btn-full">Encrypt & Generate Transaction</button>
+                        <button id="encryptMessageBtn" class="btn btn-primary btn-full">Connect Wallet First</button>
 
-                        <div id="encryptionResult" class="encryption-result" style="display: none;">
+                        <div id="encryptionResult" class="encryption-result">
                             <h3 class="card-subtitle">🔒 Encrypted Message</h3>
                             <p id="encryptedMessageOutput" class="code-block"></p>
 
                             <h3 class="card-subtitle">📜 Transaction Data</h3>
                             <div id="output" class="transaction-details"></div>
 
-                            <button id="signTransaction" class="btn btn-primary btn-full">Sign & Submit</button>
+                            <button id="signTransaction" class="btn btn-primary btn-full" style="display: none;">Sign & Submit</button>
                         </div>
                     </article>
 
                     <article class="card">
                         <h2 class="card-title">🔍 Retrieve Messages</h2>
                         <div class="tabs">
-                            <button class="tab-btn active" onclick="switchTab('storedTab', this)">Stored Messages</button>
-                            <button class="tab-btn" onclick="switchTab('retrieveTab', this)">Lookup by ID</button>
+                            <button class="tab-btn active" data-tab="storedTab">Stored Messages</button>
+                            <button class="tab-btn" data-tab="retrieveTab">Lookup by ID</button>
                         </div>
 
                         <div id="storedTab" class="tab-content active">
@@ -275,7 +267,7 @@
                             <p class="card-text">Enter the transaction ID of a message to check its status:</p>
                             <div class="search-form">
                                 <input type="text" id="txIdInput" class="search-input" placeholder="Transaction ID...">
-                                <button onclick="checkMessage()" class="btn btn-secondary">Check</button>
+                                <button id="checkMessageBtn" class="btn btn-secondary">Check</button>
                             </div>
                             <div id="messageStatus" class="message-status"></div>
                         </div>
@@ -304,7 +296,6 @@
         </div>
     </footer>
 
-    <!-- Modals -->
     <div id="modalOverlay" class="modal-overlay">
         <div class="modal">
             <div class="modal-header">
@@ -317,7 +308,7 @@
             </div>
         </div>
     </div>
-    
+
     <div id="walletSelectionModal" class="modal-overlay">
         <div class="modal wallet-modal">
             <div class="modal-header">
@@ -325,32 +316,37 @@
                 <button id="walletModalClose" class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
+                <p id="walletSelectInstruction">Select an available wallet to connect.</p>
                 <div class="wallet-grid">
                     <button class="wallet-option" data-wallet="unisat">
-                        <img src="unisat-logo.png" alt="Unisat" width="50" height="50" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'50\' viewBox=\'0 0 50 50\'%3E%3Crect width=\'50\' height=\'50\' fill=\'%23333\'/%3E%3Ctext x=\'25\' y=\'30\' font-family=\'Arial\' font-size=\'12\' text-anchor=\'middle\' fill=\'%23fff\'%3EUnisat%3C/text%3E%3C/svg%3E'">
+                         <img src="unisat-logo.png" alt="Unisat Wallet Logo" width="50" height="50">
                         <span>Unisat</span>
                     </button>
                     <button class="wallet-option" data-wallet="xverse">
-                        <img src="xverse-logo.png" alt="Xverse" width="50" height="50" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'50\' viewBox=\'0 0 50 50\'%3E%3Crect width=\'50\' height=\'50\' fill=\'%23333\'/%3E%3Ctext x=\'25\' y=\'30\' font-family=\'Arial\' font-size=\'12\' text-anchor=\'middle\' fill=\'%23fff\\'%3EXverse%3C/text%3E%3C/svg%3E'">
+                         <img src="xverse-logo.png" alt="Xverse Wallet Logo" width="50" height="50">
                         <span>Xverse</span>
                     </button>
                     <button class="wallet-option" data-wallet="okx">
-                        <img src="okx-logo.png" alt="OKX" width="50" height="50" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'50\' viewBox=\'0 0 50 50\'%3E%3Crect width=\'50\' height=\'50\' fill=\'%23333\'/%3E%3Ctext x=\'25\' y=\'30\' font-family=\'Arial\' font-size=\'12\' text-anchor=\'middle\' fill=\'%23fff\\'%3EOKX%3C/text%3E%3C/svg%3E'">
+                         <img src="okx-logo.png" alt="OKX Wallet Logo" width="50" height="50">
                         <span>OKX</span>
                     </button>
                     <button class="wallet-option" data-wallet="leather">
-                        <img src="leather-logo.png" alt="Leather" width="50" height="50" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'50\' viewBox=\'0 0 50 50\'%3E%3Crect width=\'50\' height=\'50\' fill=\'%23333\'/%3E%3Ctext x=\'25\' y=\'30\' font-family=\'Arial\' font-size=\'12\' text-anchor=\'middle\' fill=\'%23fff\\'%3ELeather%3C/text%3E%3C/svg%3E'">
+                         <img src="leather-logo.png" alt="Leather Wallet Logo" width="50" height="50">
                         <span>Leather</span>
                     </button>
                 </div>
+                 <div id="walletAvailabilityMessage" class="alert alert-warning" style="display: none; margin-top: var(--space-md);">
+                     <h3 class="alert-title">No Wallets Found</h3>
+                     <p class="alert-text">No supported Bitcoin wallets detected. Please install Unisat, Xverse, OKX, or Leather wallet browser extension or mobile app.</p>
+                 </div>
             </div>
             <div class="modal-footer">
                 <p class="wallet-disclaimer">By connecting your wallet, you agree to <a href="#" id="tcppLink">Terms of Service and Privacy Policy</a></p>
             </div>
         </div>
     </div>
-    
-    <script src="script.js"></script>
+
     <script src="https://unpkg.com/sats-connect@1.2.0"></script>
+    <script src="script.js"></script>
 </body>
 </html>
