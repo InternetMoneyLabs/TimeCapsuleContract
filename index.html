@@ -13,7 +13,7 @@
 </head>
 <body class="theme-solid-hazy">
     <div class="banner">
-        🧪 EXPERIMENTAL: Testnet demo only. Verify URL: <a href="https://internetmoneylabs.github.io/TimeCapsuleContract/" target="_blank">https://internetmoneylabs.github.io/TimeCapsuleContract/</a>
+        🧪 EXPERIMENTAL: Testnet demo only. Verify URL: <a href="https://internetmoneylabs.github.io/TimeCapsuleContract/" target="_blank" class="banner-link">internetmoneylabs.github.io/TimeCapsuleContract</a>
     </div>
 
     <header class="site-header">
@@ -98,8 +98,8 @@
                                             <img src="twitter-x.png" alt="Twitter post 1" class="carousel-slide-image">
                                             <p class="carousel-slide-text">🔒 Just sealed my thoughts in a #Bitcoin Time Capsule on Signet! 🚀 Unlocks at block 263527. First few unlockers get prizes! Be ready! #BRC20 #Crypto</p>
                                             <div class="carousel-slide-actions">
-                                                <button class="copy-tweet-btn" data-tweet="🔒 Just sealed my thoughts in a #Bitcoin Time Capsule on Signet! 🚀 Unlocks at block 263527. First few unlockers get prizes! Be ready! #BRC20 #Crypto">
-                                                    Copy & Post
+                                                <button class="copy-tweet-btn" data-tweet="🔒 Just sealed my thoughts in a #Bitcoin Time Capsule on Signet! 🚀 Unlocks at block 263527. First few unlockers get prizes! Be ready! #BRC20 #Crypto https://internetmoneylabs.github.io/TimeCapsuleContract">
+                                                    Tweet This
                                                 </button>
                                             </div>
                                         </div>
@@ -109,8 +109,8 @@
                                             <img src="twitter-xi.png" alt="Twitter post 2" class="carousel-slide-image">
                                             <p class="carousel-slide-text">Time to send a message to the future via #Bitcoin! ⏳ Using Time Capsule on Signet. Get your wallet ready for block 263527. Prizes inside! 😉 #BitcoinTimeCapsule</p>
                                             <div class="carousel-slide-actions">
-                                                <button class="copy-tweet-btn" data-tweet="Time to send a message to the future via #Bitcoin! ⏳ Using Time Capsule on Signet. Get your wallet ready for block 263527. Prizes inside! 😉 #BitcoinTimeCapsule">
-                                                    Copy & Post
+                                                <button class="copy-tweet-btn" data-tweet="Time to send a message to the future via #Bitcoin! ⏳ Using Time Capsule on Signet. Get your wallet ready for block 263527. Prizes inside! 😉 #BitcoinTimeCapsule https://internetmoneylabs.github.io/TimeCapsuleContract">
+                                                    Tweet This
                                                 </button>
                                             </div>
                                         </div>
@@ -120,8 +120,8 @@
                                             <img src="twitter-xiii.png" alt="Twitter post 3" class="carousel-slide-image">
                                             <p class="carousel-slide-text">Got a secret for block 263527? 🤫 Store it in the #Bitcoin Time Capsule! Running on Signet with BRC-2.0. Unlockers earn fees! Check it out! 👇 #CryptoNews</p>
                                             <div class="carousel-slide-actions">
-                                                <button class="copy-tweet-btn" data-tweet="Got a secret for block 263527? 🤫 Store it in the #Bitcoin Time Capsule! Running on Signet with BRC-2.0. Unlockers earn fees! Check it out! 👇 #CryptoNews">
-                                                    Copy & Post
+                                                <button class="copy-tweet-btn" data-tweet="Got a secret for block 263527? 🤫 Store it in the #Bitcoin Time Capsule! Running on Signet with BRC-2.0. Unlockers earn fees! Check it out! 👇 #CryptoNews https://internetmoneylabs.github.io/TimeCapsuleContract">
+                                                    Tweet This
                                                 </button>
                                             </div>
                                         </div>
@@ -131,8 +131,8 @@
                                             <img src="twitter-xiiii.png" alt="Twitter post 4" class="carousel-slide-image">
                                             <p class="carousel-slide-text">Testing out the #Bitcoin Time Capsule on Signet! 🛠️ Write a message, lock it till block 263527. Simple, secure, and rewards unlockers! Pretty cool. 😎 #BitcoinDevelopement</p>
                                             <div class="carousel-slide-actions">
-                                                <button class="copy-tweet-btn" data-tweet="Testing out the #Bitcoin Time Capsule on Signet! 🛠️ Write a message, lock it till block 263527. Simple, secure, and rewards unlockers! Pretty cool. 😎 #BitcoinDevelopement">
-                                                    Copy & Post
+                                                <button class="copy-tweet-btn" data-tweet="Testing out the #Bitcoin Time Capsule on Signet! 🛠️ Write a message, lock it till block 263527. Simple, secure, and rewards unlockers! Pretty cool. 😎 #BitcoinDevelopement https://internetmoneylabs.github.io/TimeCapsuleContract">
+                                                    Tweet This
                                                 </button>
                                             </div>
                                         </div>
@@ -346,6 +346,16 @@
         </div>
     </div>
 
+    <!-- Fix for sats-connect module loading issue -->
+    <script>
+        // Create a global exports object to prevent "exports is not defined" error with sats-connect
+        window.exports = {};
+    </script>
+    <!-- Fix for sats-connect module loading issue -->
+    <script>
+        // Create a global exports object to prevent "exports is not defined" error with sats-connect
+        window.exports = {};
+    </script>
     <script src="https://unpkg.com/sats-connect@1.2.0"></script>
     <script src="script.js"></script>
 </body>

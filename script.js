@@ -29,79 +29,88 @@ function showModal(title, bodyHtml, isWalletModal = false) {
     const modalTitle = modalOverlay.querySelector('.modal-title');
     const modalBody = modalOverlay.querySelector('.modal-body');
     const modalClose = modalOverlay.querySelector('.modal-close');
-    // Note: We are no longer setting innerHTML for the wallet modal body here
     const modalOk = modalOverlay.querySelector('.modal-footer .btn-primary'); // Assuming OK button exists in regular modal footer
-
 
     if (modalTitle) modalTitle.textContent = title;
     // Only set bodyHtml if it's provided and it's not the wallet modal (wallet modal body is pre-configured)
     if (modalBody && !isWalletModal && bodyHtml !== undefined) {
-         modalBody.innerHTML = bodyHtml;
+        modalBody.innerHTML = bodyHtml;
     }
-
 
     modalOverlay.classList.add('active');
 
     // Close logic for both modals
     const closeModal = () => {
         modalOverlay.classList.remove('active');
-        // Clear modal content when hidden (optional, depends on usage)
-        // if (modalBody) modalBody.innerHTML = ''; // Be cautious clearing wallet modal body
     };
 
     if (modalClose) {
         // Remove existing listener before adding a new one to prevent duplicates
         const oldCloseHandler = modalClose._closeHandler;
-         if (oldCloseHandler) {
-             modalClose.removeEventListener('click', oldCloseHandler);
-         }
-         const newCloseHandler = closeModal;
-         modalClose.addEventListener('click', newCloseHandler);
-         modalClose._closeHandler = newCloseHandler; // Store for removal
+        if (oldCloseHandler) {
+            modalClose.removeEventListener('click', oldCloseHandler);
+        }
+        const newCloseHandler = closeModal;
+        modalClose.addEventListener('click', newCloseHandler);
+        modalClose._closeHandler = newCloseHandler; // Store for removal
     }
 
     if (modalOk && !isWalletModal) { // Only apply to the regular modal's OK button
         // Remove existing listener
-         const oldOkHandler = modalOk._okHandler;
-         if (oldOkHandler) {
-             modalOk.removeEventListener('click', oldOkHandler);
-         }
-         const newOkHandler = closeModal;
-         modalOk.addEventListener('click', newOkHandler);
-         modalOk._okHandler = newOkHandler; // Store for removal
+        const oldOkHandler = modalOk._okHandler;
+        if (oldOkHandler) {
+            modalOk.removeEventListener('click', oldOkHandler);
+        }
+        const newOkHandler = closeModal;
+        modalOk.addEventListener('click', newOkHandler);
+        modalOk._okHandler = newOkHandler; // Store for removal
     }
 
     // Close modal on outside click
-     // Remove existing listener
-     const oldOverlayClickHandler = modalOverlay._overlayClickHandler;
-     if (oldOverlayClickHandler) {
-         modalOverlay.removeEventListener('click', oldOverlayClickHandler);
-     }
-     const newOverlayClickHandler = (e) => {
-         if (e.target === modalOverlay) {
-             closeModal();
-         }
-     };
+    // Remove existing listener
+    const oldOverlayClickHandler = modalOverlay._overlayClickHandler;
+    if (oldOverlayClickHandler) {
+        modalOverlay.removeEventListener('click', oldOverlayClickHandler);
+    }
+    const newOverlayClickHandler = (e) => {
+        if (e.target === modalOverlay) {
+            closeModal();
+        }
+    };
     modalOverlay.addEventListener('click', newOverlayClickHandler);
-     modalOverlay._overlayClickHandler = newOverlayClickHandler; // Store for removal
+    modalOverlay._overlayClickHandler = newOverlayClickHandler; // Store for removal
 
-     console.log(`Modal shown: ${title}`);
+    // Make the modal visible with animation
+    setTimeout(() => {
+        const modalElement = modalOverlay.querySelector('.modal');
+        if (modalElement) {
+            modalElement.style.opacity = '1';
+            modalElement.style.transform = 'translateY(0)';
+        }
+    }, 10);
+
+    console.log(`Modal shown: ${title}`);
 }
 
 // Utility function to hide modals
 function hideModal(isWalletModal = false) {
     const modalOverlay = isWalletModal ? document.getElementById('walletSelectionModal') : document.getElementById('modalOverlay');
-     if (modalOverlay) {
-         modalOverlay.classList.remove('active');
-          console.log(`Modal hidden: ${isWalletModal ? 'Wallet' : 'Regular'}`);
-          // Optional: Clear modal content when hidden
-         // const modalBody = modalOverlay.querySelector('.modal-body');
-         // if (modalBody && !isWalletModal) { // Be cautious clearing wallet modal body
-         //      modalBody.innerHTML = '';
-         // }
-     } else {
-         console.error("Modal overlay element not found for hiding:", isWalletModal ? '#walletSelectionModal' : '#modalOverlay');
-     }
+    if (modalOverlay) {
+        // Start fade-out animation
+        const modalElement = modalOverlay.querySelector('.modal');
+        if (modalElement) {
+            modalElement.style.opacity = '0';
+            modalElement.style.transform = 'translateY(-50px)';
+        }
+        
+        // Wait for animation to complete before removing active class
+        setTimeout(() => {
+            modalOverlay.classList.remove('active');
+            console.log(`Modal hidden: ${isWalletModal ? 'Wallet' : 'Regular'}`);
+        }, 300); // Match this with your CSS transition time
+    } else {
+        console.error("Modal overlay element not found for hiding:", isWalletModal ? '#walletSelectionModal' : '#modalOverlay');
+    }
 }
 
 
@@ -113,87 +122,83 @@ async function initWalletConnection() {
     const walletSelectionModal = document.getElementById('walletSelectionModal');
     const encryptMessageBtn = document.getElementById('encryptMessageBtn');
 
-
     if (!connectWalletButton || !walletStatus || !walletSelectionModal || !encryptMessageBtn) {
         console.error("Wallet elements not found on page load.");
         return; // Critical elements missing, cannot proceed with wallet init
     }
     console.log("Wallet elements found.");
 
-
     // Check for available wallets and update UI *before* the button is clicked
     checkWalletsAvailability();
 
     connectWalletButton.onclick = () => {
         console.log("Connect Wallet button clicked. Attempting to show wallet selection modal.");
-        // The checkWalletsAvailability function already runs on page load and configures the modal content (shows/hides wallets or message).
-        // We just need to show the modal overlay. The title and body structure are already in index.html.
-        // Pass empty string for bodyHtml as it's not needed to set content here.
+        // Show the wallet selection modal
         showModal('Select your Bitcoin wallet', '', true);
 
-         // Re-attach event listeners to the wallet options within the modal every time it's opened
-         // This is necessary because the modal might have been hidden/shown, and we want clicks to work.
-         // We should only re-attach if the modal element is confirmed to exist.
-         const modalElement = document.getElementById('walletSelectionModal');
-         if (modalElement) {
-              const walletOptions = modalElement.querySelectorAll('.wallet-option');
-              walletOptions.forEach(button => {
-                  // Remove existing listeners to prevent duplicates
-                  const oldClickHandler = button._clickHandler; // Use a custom property to store the handler
-                  if (oldClickHandler) {
-                      button.removeEventListener('click', oldClickHandler);
-                  }
+        // Re-attach event listeners to the wallet options within the modal
+        const modalElement = document.getElementById('walletSelectionModal');
+        if (modalElement) {
+            const walletOptions = modalElement.querySelectorAll('.wallet-option');
+            walletOptions.forEach(button => {
+                // Remove existing listeners to prevent duplicates
+                const oldClickHandler = button._clickHandler;
+                if (oldClickHandler) {
+                    button.removeEventListener('click', oldClickHandler);
+                }
 
-                  const newClickHandler = async () => {
-                      const walletType = button.getAttribute('data-wallet');
-                       console.log(`Wallet option clicked: ${walletType}`);
-                      if (button.classList.contains('unavailable')) {
-                           console.log(`${walletType} wallet unavailable.`);
-                           // Hide the wallet selection modal first
-                           hideModal(true);
-                           // Then show the "Wallet Not Found" modal
-                           showModal("Wallet Not Found", `<p>The ${walletType} wallet was not detected. Please install the browser extension or mobile app.</p>`);
-                           return;
-                      }
-                       console.log(`Attempting to connect to ${walletType}.`);
-                       // Hide the wallet selection modal before attempting connection
-                      hideModal(true);
+                const newClickHandler = async () => {
+                    const walletType = button.getAttribute('data-wallet');
+                    console.log(`Wallet option clicked: ${walletType}`);
+                    
+                    if (button.classList.contains('unavailable')) {
+                        console.log(`${walletType} wallet unavailable.`);
+                        // Hide the wallet selection modal first
+                        hideModal(true);
+                        // Then show the "Wallet Not Found" modal
+                        showModal("Wallet Not Found", `<p>The ${walletType} wallet was not detected. Please install the browser extension or mobile app.</p>`);
+                        return;
+                    }
+                    
+                    console.log(`Attempting to connect to ${walletType}.`);
+                    // Hide the wallet selection modal before attempting connection
+                    hideModal(true);
 
-
-                      try {
-                          await connectToWallet(walletType);
-                          // Update encrypt button state on successful connection
-                          const encryptMessageBtn = document.getElementById('encryptMessageBtn');
-                          if (walletConnected && encryptMessageBtn) {
-                             encryptMessageBtn.textContent = "Encrypt & Generate Transaction";
-                             encryptMessageBtn.disabled = false;
-                          }
-                           console.log("Wallet connection successful.");
-                      } catch (error) {
-                          console.error(`Failed to connect to ${walletType}:`, error);
-                          const walletStatus = document.getElementById('walletStatus');
-                          const encryptMessageBtn = document.getElementById('encryptMessageBtn');
-                          if (walletStatus) walletStatus.textContent = `Connection Failed: ${error.message || error}`;
-                          walletConnected = false;
-                          userAddress = null;
-                          userPublicKey = null;
-                          currentWallet = null;
-                           if (encryptMessageBtn) {
-                              encryptMessageBtn.textContent = "Connect Wallet First";
-                              encryptMessageBtn.disabled = true;
-                           }
-                          showModal("Connection Error", `<p>Failed to connect to ${walletType}. Please ensure the wallet is installed, unlocked, and supports Signet.</p><p>Details: ${error.message || error}</p>`);
-                      }
-                  };
-                   button.addEventListener('click', newClickHandler);
-                   button._clickHandler = newClickHandler; // Store the handler for removal
-              });
-         } else {
-             console.error("Wallet selection modal not found when trying to re-attach listeners.");
-         }
+                    try {
+                        await connectToWallet(walletType);
+                        // Update encrypt button state on successful connection
+                        const encryptMessageBtn = document.getElementById('encryptMessageBtn');
+                        if (walletConnected && encryptMessageBtn) {
+                            encryptMessageBtn.textContent = "Encrypt & Generate Transaction";
+                            encryptMessageBtn.disabled = false;
+                        }
+                        console.log("Wallet connection successful.");
+                    } catch (error) {
+                        console.error(`Failed to connect to ${walletType}:`, error);
+                        const walletStatus = document.getElementById('walletStatus');
+                        const encryptMessageBtn = document.getElementById('encryptMessageBtn');
+                        if (walletStatus) walletStatus.textContent = `Connection Failed: ${error.message || error}`;
+                        walletConnected = false;
+                        userAddress = null;
+                        userPublicKey = null;
+                        currentWallet = null;
+                        if (encryptMessageBtn) {
+                            encryptMessageBtn.textContent = "Connect Wallet First";
+                            encryptMessageBtn.disabled = true;
+                        }
+                        showModal("Connection Error", `<p>Failed to connect to ${walletType}. Please ensure the wallet is installed, unlocked, and supports Signet.</p><p>Details: ${error.message || error}</p>`);
+                    }
+                };
+                
+                button.addEventListener('click', newClickHandler);
+                button._clickHandler = newClickHandler; // Store the handler for removal
+            });
+        } else {
+            console.error("Wallet selection modal not found when trying to re-attach listeners.");
+        }
     };
 
-     // Handle wallet disconnection (basic example, actual event listeners vary by wallet)
+    // Handle wallet disconnection
     const handleDisconnect = () => {
         console.log("Wallet disconnected");
         walletConnected = false;
@@ -202,47 +207,102 @@ async function initWalletConnection() {
         currentWallet = null;
         walletStatus.textContent = 'Wallet Status: Disconnected';
         connectWalletButton.style.display = 'inline-block'; // Show connect button
-         encryptMessageBtn.textContent = "Connect Wallet First";
-         encryptMessageBtn.disabled = true;
-         // Stop monitoring network status if wallet disconnects
-         clearInterval(networkStatusInterval);
-         networkStatusInterval = null;
+        encryptMessageBtn.textContent = "Connect Wallet First";
+        encryptMessageBtn.disabled = true;
+        // Stop monitoring network status if wallet disconnects
+        clearInterval(networkStatusInterval);
+        networkStatusInterval = null;
         showModal("Wallet Disconnected", "<p>Your wallet has been disconnected.</p>");
-         // Clear any wallet-specific state or UI elements
-     };
+    };
 
-
+    // Add event listeners for wallet providers
     if (window.bitcoin && window.bitcoin.on) {
-         console.log("Adding Bitcoin provider listeners.");
+        console.log("Adding Bitcoin provider listeners.");
         window.bitcoin.on('accountsChanged', handleDisconnect);
         window.bitcoin.on('networkChanged', handleDisconnect);
-         // Check initial connection via this provider if it exists
+        // Check initial connection via this provider if it exists
         checkInitialConnection();
     } else if (window.unisat && window.unisat.on) {
-         console.log("Adding Unisat provider listeners.");
+        console.log("Adding Unisat provider listeners.");
         window.unisat.on('accountsChanged', handleDisconnect);
         window.unisat.on('networkChanged', handleDisconnect);
-         // Check initial connection via this provider if it exists
-        checkInitialConnection(); // Unisat is Sats Connect compatible, check Sats Connect first
+        // Check initial connection via this provider if it exists
+        checkInitialConnection();
     } else if (typeof window.satsconnect !== 'undefined') {
-         console.log("Sats Connect API detected. Checking initial connection via Sats Connect.");
-         // Sats Connect handles Xverse and Leather generally
-         checkInitialConnection();
-         // Sats Connect doesn't usually have a global 'on' method for network/account changes,
-         // wallet-specific providers exposed via Sats Connect might, or you might rely on polling.
-         // Keeping polling logic in startNetworkStatusMonitoring.
+        console.log("Sats Connect API detected. Checking initial connection via Sats Connect.");
+        // Sats Connect handles Xverse and Leather generally
+        checkInitialConnection();
     }
-    // Add similar listeners for OKX and Leather if their APIs support it and are not covered by Sats Connect
 
     // Event listener for the Terms and Privacy Policy link in the wallet modal
     const tcppLinkInWalletModal = document.getElementById('tcppLink');
     if (tcppLinkInWalletModal) {
         tcppLinkInWalletModal.addEventListener('click', (e) => {
             e.preventDefault();
-             // Hide the wallet modal before showing the T&CP modal
+            // Hide the wallet modal before showing the T&CP modal
             hideModal(true);
-             // Display the Terms and Privacy Policy content
-            showModal("Terms and Privacy Policy", "<p>This is a placeholder for Terms of Service and Privacy Policy. In a production application, the full text would be loaded here.</p>");
+            // Display the Terms and Privacy Policy content
+            showModal("Terms and Privacy Policy", `
+                <div class="tcpp-content">
+                    <h3>Terms of Service</h3>
+                    <p>Last Updated: May 8, 2025</p>
+                    
+                    <h4>1. Acceptance of Terms</h4>
+                    <p>By accessing or using the Bitcoin Time Capsule application ("Service"), you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you do not have permission to access the Service.</p>
+                    
+                    <h4>2. Description of Service</h4>
+                    <p>Bitcoin Time Capsule is an experimental application that allows users to create time-locked Bitcoin transactions on the blockchain. The Service is currently operating on Bitcoin's Signet testnet and is provided for demonstration and testing purposes only.</p>
+                    
+                    <h4>3. Experimental Nature</h4>
+                    <p>You acknowledge that this Service is experimental and may contain bugs, errors, or security vulnerabilities. You use the Service at your own risk. We make no warranties about the reliability, functionality, or availability of the Service.</p>
+                    
+                    <h4>4. Blockchain Transactions</h4>
+                    <p>All transactions created through the Service are irreversible and immutable once confirmed on the blockchain. You are solely responsible for verifying transaction details before confirmation. We cannot recover lost funds or reverse transactions.</p>
+                    
+                    <h4>5. Fees</h4>
+                    <p>The Service charges a storage fee for creating time capsules. Current fee structure is displayed within the application. Fees are subject to change.</p>
+                    
+                    <h4>6. Limitation of Liability</h4>
+                    <p>To the maximum extent permitted by law, we shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use or inability to use the Service.</p>
+                    
+                    <h4>7. Modifications to Terms</h4>
+                    <p>We reserve the right to modify these terms at any time. Continued use of the Service after any such changes constitutes your consent to such changes.</p>
+                    
+                    <h3>Privacy Policy</h3>
+                    <p>Last Updated: May 8, 2025</p>
+                    
+                    <h4>1. Information Collection</h4>
+                    <p>We collect the following information when you use our Service:</p>
+                    <ul>
+                        <li>Wallet addresses used to interact with the Service</li>
+                        <li>Transaction data that is publicly recorded on the blockchain</li>
+                        <li>Technical information such as browser type and device information</li>
+                    </ul>
+                    
+                    <h4>2. Use of Information</h4>
+                    <p>We use collected information to:</p>
+                    <ul>
+                        <li>Provide, maintain, and improve the Service</li>
+                        <li>Process transactions and send notices about your transactions</li>
+                        <li>Resolve disputes and troubleshoot problems</li>
+                    </ul>
+                    
+                    <h4>3. Blockchain Data</h4>
+                    <p>Information stored on the blockchain is inherently public and permanent. We cannot delete or modify data once it has been confirmed on the blockchain.</p>
+                    
+                    <h4>4. Third-Party Services</h4>
+                    <p>Our Service integrates with third-party wallet providers. When connecting your wallet, you may be subject to the terms and privacy policies of those providers.</p>
+                    
+                    <h4>5. Security</h4>
+                    <p>We implement reasonable security measures to protect your information. However, no method of transmission over the internet or electronic storage is 100% secure.</p>
+                    
+                    <h4>6. Changes to Privacy Policy</h4>
+                    <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.</p>
+                    
+                    <h4>7. Contact Us</h4>
+                    <p>If you have any questions about these Terms or Privacy Policy, please contact us at support@bitcointimecapsule.example.com.</p>
+                </div>
+            `);
         });
     }
 }
@@ -279,7 +339,7 @@ async function checkInitialConnection() {
 
 
                 if (currentNetwork !== CONTRACT_CONFIG.network) {
-                    if (walletStatus) walletStatus.textContent = `Connected (${walletType}): Wrong network (${currentNetwork.toUpperCase()}).`;
+                    if (walletStatus) walletStatus.textContent = `Connected (${walletType}): Wrong network (${currentNetwork ? currentNetwork.toUpperCase() : 'UNKNOWN'}).`;
                      promptNetworkSwitch(walletType); // Prompt user to switch
                      // Keep connected state true but indicate wrong network
                      walletConnected = true; // Still connected, just on wrong network
@@ -290,7 +350,7 @@ async function checkInitialConnection() {
                      }
 
                 } else {
-                     if (walletStatus) walletStatus.textContent = `Connected (${walletType}): ${currentNetwork.toUpperCase()}`;
+                     if (walletStatus) walletStatus.textContent = `Connected (${walletType}): ${currentNetwork ? currentNetwork.toUpperCase() : 'UNKNOWN'}`;
                      walletConnected = true;
                      if (connectWalletButton) connectWalletButton.style.display = 'none'; // Hide connect button
                      if (encryptMessageBtn) {
@@ -528,85 +588,91 @@ async function connectToWallet(walletType) {
             currentNetwork = await walletInstance.getNetwork(); // OKX might have getNetwork or similar
             currentWallet = walletInstance; // Set currentWallet to the actual provider
 
-        } else if (walletType === 'leather' && (typeof window.Leather !== 'undefined' || typeof window.StacksProvider !== 'undefined') && typeof window.satsconnect !== 'undefined') {
-            // Attempt Sats Connect for Leather first
-            try {
-                 console.log("Using Sats Connect for Leather connection.");
-                 const response = await window.satsconnect.request('wallet_connect', {
-                    addresses: ['ordinals', 'payment'],
-                    network: CONTRACT_CONFIG.network // Request Signet network
-                });
+        } else if (walletType === 'leather') {
+            // First check if Leather is available through any method
+            if ((typeof window.Leather !== 'undefined' || typeof window.StacksProvider !== 'undefined')) {
+                try {
+                    // Try Sats Connect first if available
+                    if (typeof window.satsconnect !== 'undefined') {
+                        console.log("Using Sats Connect for Leather connection.");
+                        const response = await window.satsconnect.request('wallet_connect', {
+                            addresses: ['ordinals', 'payment'],
+                            network: CONTRACT_CONFIG.network
+                        });
 
-                if (response.status === 'success') {
-                    accounts = response.result.addresses;
-                     const paymentAddressInfo = accounts.find(acc => acc.purpose === 'payment');
-                    if (paymentAddressInfo && paymentAddressInfo.network) {
-                         currentNetwork = { network: paymentAddressInfo.network.toLowerCase() };
+                        if (response.status === 'success') {
+                            accounts = response.result.addresses;
+                            const paymentAddressInfo = accounts.find(acc => acc.purpose === 'payment');
+                            if (paymentAddressInfo && paymentAddressInfo.network) {
+                                currentNetwork = { network: paymentAddressInfo.network.toLowerCase() };
+                            } else {
+                                currentNetwork = { network: 'unknown' };
+                                console.warn("Could not retrieve network information from Leather (Sats Connect).");
+                            }
+                            
+                            // Set currentWallet to use simulated Sats Connect methods
+                            currentWallet = {
+                                requestAccounts: async () => accounts.map(acc => acc.address),
+                                getNetwork: async () => currentNetwork,
+                                signPsbt: async (psbtHex, options) => {
+                                    console.log("Using Sats Connect signPsbt for Leather");
+                                    const signResponse = await window.satsconnect.request('wallet_signPsbt', {
+                                        psbtHex: psbtHex,
+                                        network: CONTRACT_CONFIG.network,
+                                        ...options
+                                    });
+                                    if (signResponse.status === 'success') {
+                                        return signResponse.result.psbtHex;
+                                    } else {
+                                        throw new Error(signResponse.error || 'PSBT signing failed in Leather (Sats Connect).');
+                                    }
+                                },
+                                pushTx: async (signedTxHex) => {
+                                    console.log("Using Sats Connect pushTx for Leather");
+                                    const pushResponse = await window.satsconnect.request('wallet_pushTx', {
+                                        txHex: signedTxHex,
+                                        network: CONTRACT_CONFIG.network
+                                    });
+                                    if (pushResponse.status === 'success') {
+                                        return pushResponse.result.txId;
+                                    } else {
+                                        throw new Error(pushResponse.error || 'Transaction push failed in Leather (Sats Connect).');
+                                    }
+                                }
+                            };
+                        } else {
+                            throw new Error(response.error || 'Leather connection failed (Sats Connect).');
+                        }
+                    } 
+                    // If Sats Connect isn't available or failed, try native Leather API
+                    else if (typeof window.Leather !== 'undefined' && window.Leather.requestAccounts) {
+                        walletInstance = window.Leather;
+                        console.log("Using Leather native API.");
+                        accounts = await walletInstance.requestAccounts();
+                        currentNetwork = { network: 'unknown' }; // Default to unknown, will be checked/prompted
+                        currentWallet = walletInstance;
+                        
+                        // Bind native API methods if they exist
+                        if (walletInstance.signPsbt) {
+                            currentWallet.signPsbt = walletInstance.signPsbt.bind(walletInstance);
+                        } else {
+                            console.warn("Leather native API signPsbt method not found.");
+                        }
+                        if (walletInstance.pushTx) {
+                            currentWallet.pushTx = walletInstance.pushTx.bind(walletInstance);
+                        } else {
+                            console.warn("Leather native API pushTx method not found.");
+                        }
                     } else {
-                         throw new Error("Could not retrieve network information from Leather (Sats Connect).");
+                        throw new Error("Leather wallet API methods not found.");
                     }
-                    // Set currentWallet to use simulated Sats Connect methods
-                    currentWallet = {
-                         requestAccounts: async () => accounts.map(acc => acc.address),
-                         getNetwork: async () => currentNetwork,
-                         signPsbt: async (psbtHex, options) => {
-                              console.log("Using Sats Connect signPsbt for Leather");
-                             const signResponse = await window.satsconnect.request('wallet_signPsbt', {
-                                psbtHex: psbtHex,
-                                network: CONTRACT_CONFIG.network,
-                                 ...options // Pass options
-                             });
-                              if (signResponse.status === 'success') {
-                                 return signResponse.result.psbtHex;
-                             } else {
-                                 throw new Error(signResponse.error || 'PSBT signing failed in Leather (Sats Connect).');
-                             }
-                        },
-                         pushTx: async (signedTxHex) => {
-                              console.log("Using Sats Connect pushTx for Leather");
-                             const pushResponse = await window.satsconnect.request('wallet_pushTx', {
-                                txHex: signedTxHex,
-                                 network: CONTRACT_CONFIG.network
-                             });
-                             if (pushResponse.status === 'success') {
-                                 return pushResponse.result.txId;
-                             } else {
-                                  throw new Error(pushResponse.error || 'Transaction push failed in Leather (Sats Connect).');
-                             }
-                         }
-                    };
-
-                } else {
-                     throw new Error(response.error || 'Leather connection failed (Sats Connect).');
+                } catch (error) {
+                    console.error("Failed to connect to Leather wallet:", error);
+                    throw new Error(`Leather wallet connection failed: ${error.message || error}`);
                 }
-
-            } catch (satsConnectError) {
-                 console.warn("Sats Connect failed for Leather, trying Leather specific API if available:", satsConnectError);
-                 // Fallback to Leather specific API if Sats Connect fails or is not the preferred method
-                 if (typeof window.Leather !== 'undefined' && window.Leather.requestAccounts) {
-                     walletInstance = window.Leather;
-                      console.log("Using Leather native API.");
-                     accounts = await walletInstance.requestAccounts(); // Leather's own API might return simpler array of addresses
-                     // Leather might not have a getNetwork method directly accessible in the same way
-                     // Assume success and check network status later or rely on promptNetworkSwitch
-                      currentNetwork = { network: 'unknown' }; // Default to unknown, will be checked/prompted
-                      currentWallet = walletInstance; // Set currentWallet to the actual provider
-
-                      // Bind native API methods if they exist
-                     if (walletInstance.signPsbt) {
-                         currentWallet.signPsbt = walletInstance.signPsbt.bind(walletInstance);
-                     } else {
-                          console.warn("Leather native API signPsbt method not found.");
-                     }
-                      if (walletInstance.pushTx) {
-                         currentWallet.pushTx = walletInstance.pushTx.bind(walletInstance);
-                      } else {
-                           console.warn("Leather native API pushTx method not found.");
-                      }
-
-                 } else {
-                      throw new Error(`Leather wallet not found or connection failed. Details: ${satsConnectError.message || satsConnectError}`);
-                 }
+            } else {
+                console.error(`Wallet provider for ${walletType} not found or supported API not available.`);
+                throw new Error(`Wallet provider for ${walletType} not found or supported API not available.`);
             }
 
         } else {
@@ -623,12 +689,39 @@ async function connectToWallet(walletType) {
         userAddress = accounts[0].address || accounts[0]; // Use .address property if available, fallback to the item itself
         userPublicKey = accounts[0].publicKey || null; // May not be available for all wallets/methods
 
-         console.log(`Connected account: ${userAddress}, Network: ${currentNetwork.network}`);
+        console.log(`Connected account: ${userAddress}, Network: ${currentNetwork ? currentNetwork.network : 'undefined'}`);
+
+        // Check if network is defined before trying to access it
+        if (!currentNetwork || !currentNetwork.network) {
+            console.warn("Network information is undefined. Assuming wrong network and prompting for switch.");
+            const walletStatus = document.getElementById('walletStatus');
+            if (walletStatus) walletStatus.textContent = `Connected (${walletType}): Network unknown. Please verify network.`;
+            
+            // Attempt to switch network
+            const switchConfirmed = await promptNetworkSwitch(walletType);
+            if (!switchConfirmed) {
+                throw new Error(`Please manually switch your ${walletType} to Bitcoin ${CONTRACT_CONFIG.network.toUpperCase()} to proceed.`);
+            }
+            
+            // Re-check network after switch attempt
+            if (currentWallet && currentWallet.getNetwork) {
+                try {
+                    currentNetwork = await currentWallet.getNetwork();
+                } catch (getNetworkError) {
+                    console.warn("Failed to get network after switch attempt:", getNetworkError);
+                    // If still can't get network, assume it's correct after user confirmation
+                    currentNetwork = { network: CONTRACT_CONFIG.network };
+                }
+            } else {
+                // If can't check network, assume it's correct after user confirmation
+                currentNetwork = { network: CONTRACT_CONFIG.network };
+            }
+        }
 
         if (currentNetwork.network !== CONTRACT_CONFIG.network) {
              const walletStatus = document.getElementById('walletStatus');
              const encryptMessageBtn = document.getElementById('encryptMessageBtn');
-            if (walletStatus) walletStatus.textContent = `Connected (${walletType}): Wrong network (${currentNetwork.network.toUpperCase()}).`;
+            if (walletStatus) walletStatus.textContent = `Connected (${walletType}): Wrong network (${currentNetwork.network ? currentNetwork.network.toUpperCase() : 'UNKNOWN'}).`;
             console.warn(`Wallet connected to wrong network: ${currentNetwork.network}. Prompting switch.`);
 
              // Attempt to switch network if supported by wallet API or guide user
@@ -638,7 +731,7 @@ async function connectToWallet(walletType) {
                  // For now, throw an error forcing manual switch
                  console.error("User did not confirm network switch.");
                  // Set status message indicating wrong network and disabled state
-                 if (walletStatus) walletStatus.textContent = `Connected (${walletType}): Wrong network (${currentNetwork.network.toUpperCase()}). MANUAL SWITCH REQUIRED.`;
+                 if (walletStatus) walletStatus.textContent = `Connected (${walletType}): Wrong network (${currentNetwork.network ? currentNetwork.network.toUpperCase() : 'UNKNOWN'}). MANUAL SWITCH REQUIRED.`;
                  if (encryptMessageBtn) {
                      encryptMessageBtn.textContent = "Wrong Network";
                      encryptMessageBtn.disabled = true;
@@ -661,7 +754,7 @@ async function connectToWallet(walletType) {
              if (networkAfterSwitch.network !== CONTRACT_CONFIG.network) {
                   console.error(`Network is still incorrect after switch attempt: ${networkAfterSwitch.network}`);
                    // Still on wrong network after prompt/switch attempt
-                  if (walletStatus) walletStatus.textContent = `Connected (${walletType}): Wrong network (${networkAfterSwitch.network.toUpperCase()}). MANUAL SWITCH REQUIRED.`;
+                  if (walletStatus) walletStatus.textContent = `Connected (${walletType}): Wrong network (${networkAfterSwitch.network ? networkAfterSwitch.network.toUpperCase() : 'UNKNOWN'}). MANUAL SWITCH REQUIRED.`;
                   if (encryptMessageBtn) {
                       encryptMessageBtn.textContent = "Wrong Network";
                       encryptMessageBtn.disabled = true;
@@ -688,7 +781,7 @@ async function connectToWallet(walletType) {
              const walletStatus = document.getElementById('walletStatus');
              const connectWalletButton = document.getElementById('connectWallet');
              const encryptMessageBtn = document.getElementById('encryptMessageBtn');
-            if (walletStatus) walletStatus.textContent = `Connected (${walletType}): ${currentNetwork.network.toUpperCase()}`;
+            if (walletStatus) walletStatus.textContent = `Connected (${walletType}): ${currentNetwork.network ? currentNetwork.network.toUpperCase() : 'UNKNOWN'}`;
             walletConnected = true;
             if (connectWalletButton) connectWalletButton.style.display = 'none'; // Hide connect button on success
              if (encryptMessageBtn) {
@@ -839,7 +932,7 @@ function startNetworkStatusMonitoring() {
                  // Attempt to get a cleaner wallet name
                  const walletTypeName = currentWallet.constructor.name.replace('Provider', '').replace('Bitcoin', '').trim() || (currentWallet._brand ? currentWallet._brand.name : 'Wallet'); // Use _brand for Sats Connect simulation
                 if (network.network !== CONTRACT_CONFIG.network) {
-                    if (walletStatus) walletStatus.textContent = `Connected (${walletTypeName}): Wrong network (${network.network.toUpperCase()}).`;
+            if (walletStatus) walletStatus.textContent = `Connected (${walletTypeName}): Wrong network (${network.network ? network.network.toUpperCase() : 'UNKNOWN'}).`;
                      if (encryptMessageBtn) {
                           encryptMessageBtn.textContent = "Wrong Network";
                           encryptMessageBtn.disabled = true;
@@ -847,7 +940,7 @@ function startNetworkStatusMonitoring() {
                      // Optionally, prompt network switch again, but avoid excessive prompts
                      // promptNetworkSwitch(walletTypeName); // Avoid prompting automatically in polling
                 } else {
-                     if (walletStatus) walletStatus.textContent = `Connected (${walletTypeName}): ${network.network.toUpperCase()}`;
+                     if (walletStatus) walletStatus.textContent = `Connected (${walletTypeName}): ${network.network ? network.network.toUpperCase() : 'UNKNOWN'}`;
                       if (walletConnected && encryptMessageBtn && encryptMessageBtn.textContent !== "Encrypt & Generate Transaction") {
                          // If connected, on the correct network, and button state is not 'Encrypt', update it
                           const messageInput = document.getElementById('message');
@@ -905,64 +998,71 @@ function startNetworkStatusMonitoring() {
 // Carousel Auto-slide and Navigation
 function initCarousel() {
     console.log("Initializing carousel.");
-    const carousel = document.getElementById('twitterCarousel');
+    
+    // Use querySelector to find the carousel container
+    const carousel = document.querySelector('.twitter-carousel');
+    if (!carousel) {
+        console.warn("Twitter carousel container not found.");
+        return;
+    }
+    
+    // Find carousel elements
+    const carouselSlidesContainer = document.getElementById('twitterCarousel');
     const prevBtn = document.getElementById('prevSlide');
     const nextBtn = document.getElementById('nextSlide');
     const indicatorsContainer = document.getElementById('carouselIndicators');
-     const carouselSlidesContainer = carousel ? carousel.querySelector('.carousel-slides') : null;
-
-
-    if (!carousel || !prevBtn || !nextBtn || !indicatorsContainer || !carouselSlidesContainer) {
-        console.error("Carousel elements not found for initialization.");
+    
+    // Check if all required elements exist
+    const hasNavigation = prevBtn && nextBtn && indicatorsContainer;
+    
+    // Check if slides container exists
+    if (!carouselSlidesContainer) {
+        console.warn("Carousel slides container not found.");
         return;
     }
-
-    let currentSlide = 0;
+    
+    // Get all slides
     const slides = carouselSlidesContainer.querySelectorAll('.carousel-slide');
     const totalSlides = slides.length;
-
+    
+    // If no slides, exit early
     if (totalSlides === 0) {
         console.warn("No carousel slides found.");
-        // Hide carousel controls if no slides
-        prevBtn.style.display = 'none';
-        nextBtn.style.display = 'none';
-        indicatorsContainer.style.display = 'none';
         return;
-    } else if (totalSlides === 1) {
-         // If only one slide, hide navigation and indicators
-         prevBtn.style.display = 'none';
-         nextBtn.style.display = 'none';
-         indicatorsContainer.style.display = 'none';
-    } else {
-         // Ensure controls are visible if there's more than one slide
-         prevBtn.style.display = 'flex'; // Use flex because they are flex items
-         nextBtn.style.display = 'flex';
-         indicatorsContainer.style.display = 'flex';
     }
+    
+    // Initialize current slide index
+    let currentSlide = 0;
 
-
-    // Ensure correct width for slides and container
-     // Set container width to accommodate all slides side-by-side
-    carouselSlidesContainer.style.width = `${totalSlides * 100}%`;
-     // Set individual slide width to be 100% of the viewport/container width
-    slides.forEach(slide => {
-        slide.style.width = `${100 / totalSlides}%`; // Each slide takes up 1/totalSlides of the container width
-    });
-
-
-    // Create indicators if not already present or count is wrong
-    const existingIndicators = indicatorsContainer.querySelectorAll('.carousel-indicator');
-    if (existingIndicators.length !== totalSlides) {
-         indicatorsContainer.innerHTML = ''; // Clear existing if count is wrong
-        for (let i = 0; i < totalSlides; i++) {
-            const indicator = document.createElement('div');
-            indicator.classList.add('carousel-indicator');
-            indicator.setAttribute('data-slide', i);
-            indicatorsContainer.appendChild(indicator);
+    // Only set up navigation if all elements exist
+    if (hasNavigation) {
+        if (totalSlides === 1) {
+            // If only one slide, hide navigation and indicators
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+            indicatorsContainer.style.display = 'none';
+        } else {
+            // Ensure controls are visible if there's more than one slide
+            prevBtn.style.display = 'flex'; // Use flex because they are flex items
+            nextBtn.style.display = 'flex';
+            indicatorsContainer.style.display = 'flex';
+            
+            // Create indicators if not already present or count is wrong
+            const existingIndicators = indicatorsContainer.querySelectorAll('.carousel-indicator');
+            if (existingIndicators.length !== totalSlides) {
+                indicatorsContainer.innerHTML = ''; // Clear existing if count is wrong
+                for (let i = 0; i < totalSlides; i++) {
+                    const indicator = document.createElement('div');
+                    indicator.classList.add('carousel-indicator');
+                    if (i === 0) indicator.classList.add('active');
+                    indicator.setAttribute('data-slide', i);
+                    indicatorsContainer.appendChild(indicator);
+                }
+            }
         }
     }
-     const indicators = indicatorsContainer.querySelectorAll('.carousel-indicator');
-
+    
+    const indicators = indicatorsContainer ? indicatorsContainer.querySelectorAll('.carousel-indicator') : [];
 
     function goToSlide(slideIndex) {
         // Handle wrapping
@@ -973,57 +1073,85 @@ function initCarousel() {
         }
 
         currentSlide = slideIndex;
-        // Transform the container to show the current slide
-        carouselSlidesContainer.style.transform = `translateX(-${currentSlide * (100 / totalSlides)}%)`;
+        
+        // Hide all slides first
+        slides.forEach((slide, index) => {
+            slide.style.display = 'none';
+        });
+        
+        // Show only the current slide
+        slides[currentSlide].style.display = 'flex';
 
         // Update indicators
-         if (indicators.length > 0) {
-             indicators.forEach((indicator, index) => {
-                 if (index === currentSlide) {
-                     indicator.classList.add('active');
-                 } else {
-                     indicator.classList.remove('active');
-                 }
-             });
-         }
+        if (indicators.length > 0) {
+            indicators.forEach((indicator, index) => {
+                if (index === currentSlide) {
+                    indicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active');
+                }
+            });
+        }
     }
 
-    // Add event listeners only if there's more than one slide
-    if (totalSlides > 1) {
-         prevBtn.addEventListener('click', () => {
+    // Add event listeners only if there's more than one slide and navigation exists
+    if (totalSlides > 1 && hasNavigation) {
+        // Remove existing listeners before adding to prevent duplicates
+        const oldPrevHandler = prevBtn._prevHandler;
+        if (oldPrevHandler) {
+            prevBtn.removeEventListener('click', oldPrevHandler);
+        }
+        
+        const newPrevHandler = () => {
             goToSlide(currentSlide - 1);
-             resetAutoSlide(); // Reset timer on manual navigation
-        });
-
-        nextBtn.addEventListener('click', () => {
+            resetAutoSlide();
+        };
+        prevBtn.addEventListener('click', newPrevHandler);
+        prevBtn._prevHandler = newPrevHandler;
+        
+        const oldNextHandler = nextBtn._nextHandler;
+        if (oldNextHandler) {
+            nextBtn.removeEventListener('click', oldNextHandler);
+        }
+        
+        const newNextHandler = () => {
             goToSlide(currentSlide + 1);
-             resetAutoSlide(); // Reset timer on manual navigation
-        });
+            resetAutoSlide();
+        };
+        nextBtn.addEventListener('click', newNextHandler);
+        nextBtn._nextHandler = newNextHandler;
 
+        // Add click handlers to indicators
         indicators.forEach((indicator, index) => {
-            indicator.addEventListener('click', () => {
+            const oldIndicatorHandler = indicator._indicatorHandler;
+            if (oldIndicatorHandler) {
+                indicator.removeEventListener('click', oldIndicatorHandler);
+            }
+            
+            const newIndicatorHandler = () => {
                 goToSlide(index);
-                 resetAutoSlide(); // Reset timer on manual navigation
-            });
+                resetAutoSlide();
+            };
+            indicator.addEventListener('click', newIndicatorHandler);
+            indicator._indicatorHandler = newIndicatorHandler;
         });
 
         function startAutoSlide() {
-             // Clear any existing auto-slide interval
-             if (carouselAutoSlideInterval) clearInterval(carouselAutoSlideInterval);
+            // Clear any existing auto-slide interval
+            if (carouselAutoSlideInterval) clearInterval(carouselAutoSlideInterval);
 
-             carouselAutoSlideInterval = setInterval(() => {
+            carouselAutoSlideInterval = setInterval(() => {
                 goToSlide(currentSlide + 1);
             }, 5000); // Change slide every 5 seconds
         }
 
-         function resetAutoSlide() {
-             startAutoSlide(); // Stop current interval and start a new one
-         }
+        function resetAutoSlide() {
+            startAutoSlide(); // Stop current interval and start a new one
+        }
 
         // Start auto-slide on initialization
         startAutoSlide();
     }
-
 
     // Initialize to the first slide
     goToSlide(0);
@@ -1031,32 +1159,28 @@ function initCarousel() {
     // Copy tweet button logic
     document.querySelectorAll('.copy-tweet-btn').forEach(button => {
         // Remove existing listeners before adding to prevent duplicates on re-init if any
-         const oldCopyHandler = button._copyHandler;
-         if (oldCopyHandler) {
-             button.removeEventListener('click', oldCopyHandler);
-         }
+        const oldCopyHandler = button._copyHandler;
+        if (oldCopyHandler) {
+            button.removeEventListener('click', oldCopyHandler);
+        }
 
-        const newCopyHandler = async () => {
+        const newCopyHandler = () => {
             const tweetText = button.getAttribute('data-tweet');
-            try {
-                await navigator.clipboard.writeText(tweetText);
-                // Show a "Copied!" message next to the button
-                const confirmation = document.createElement('span');
-                confirmation.textContent = 'Copied!';
-                confirmation.classList.add('copy-confirmation-inline'); // Use a specific class for styling
-                button.parentNode.appendChild(confirmation);
-                setTimeout(() => {
-                    confirmation.remove();
-                }, 2000); // Remove after 2 seconds
-            } catch (err) {
-                console.error('Failed to copy tweet text: ', err);
-                showModal("Copy Error", "<p>Failed to copy tweet text to clipboard. Please try manually.</p>");
-            }
+            
+            // Create Twitter Web Intent URL with the tweet text pre-populated
+            const encodedTweetText = encodeURIComponent(tweetText);
+            const twitterIntentUrl = `https://twitter.com/intent/tweet?text=${encodedTweetText}`;
+            
+            // Open Twitter in a new tab/window
+            window.open(twitterIntentUrl, '_blank');
+            
+            console.log("Opening Twitter with pre-populated tweet:", tweetText);
         };
-         button.addEventListener('click', newCopyHandler);
-         button._copyHandler = newCopyHandler; // Store for removal
+        
+        button.addEventListener('click', newCopyHandler);
+        button._copyHandler = newCopyHandler; // Store for removal
     });
-     console.log("Carousel initialized.");
+    console.log("Carousel initialized.");
 }
 
 
@@ -1185,179 +1309,171 @@ function initBlockHeightAndCountdown() {
     const progressBar = document.getElementById('progressBar');
     const blockStatus = document.getElementById('blockStatus');
 
-
-     if (!currentBlockHeightElement || !unlockBlockHeightElement || !progressBar || !blockStatus) {
-         console.error("Block height or countdown elements not found.");
-         return;
-     }
+    if (!currentBlockHeightElement || !unlockBlockHeightElement || !progressBar || !blockStatus) {
+        console.error("Block height or countdown elements not found.");
+        return;
+    }
 
     const unlockBlock = parseInt(unlockBlockHeightElement.textContent, 10);
     let currentBlock = 0; // Placeholder
 
-     // Function to fetch current block height (example using a hypothetical API)
-     async function fetchCurrentBlockHeight() {
-         try {
-             // Replace with actual API call (e.g., fetch('https://mempool.space/api/blocks/tip/height'))
-             // For now, we'll simulate a block height increase
-             // const response = await fetch('https://api.example.com/currentblock'); // Replace with a real API endpoint
-             // if (!response.ok) {
-             //     throw new Error(`API error: ${response.status}`);
-             // }
-             // const data = await response.json();
-             // currentBlock = data.height; // Adjust based on actual API response structure
+    // Function to fetch current block height (example using a hypothetical API)
+    async function fetchCurrentBlockHeight() {
+        try {
+            // Replace with actual API call (e.g., fetch('https://mempool.space/api/blocks/tip/height'))
+            // For now, we'll simulate a block height increase
+            // const response = await fetch('https://api.example.com/currentblock'); // Replace with a real API endpoint
+            // if (!response.ok) {
+            //     throw new Error(`API error: ${response.status}`);
+            // }
+            // const data = await response.json();
+            // currentBlock = data.height; // Adjust based on actual API response structure
 
-              // Simulate block height increase for demo
-              // Start well below unlock block on initial load if it's still default 'Loading...'
-             const initialSimulatedBlock = 263000; // Start at a block well before unlock height
-             let currentBlockText = currentBlockHeightElement.textContent;
+            // Simulate block height increase for demo
+            // Start well below unlock block on initial load if it's still default 'Loading...'
+            const initialSimulatedBlock = Math.floor(unlockBlock * 0.7); // Start at ~70% of the way to unlock height
+            let currentBlockText = currentBlockHeightElement.textContent;
 
-             // Check if the current text is 'Loading...' or not a number
-             if (currentBlockText === 'Loading...' || isNaN(parseInt(currentBlockText, 10))) {
-                  currentBlock = initialSimulatedBlock;
-             } else {
-                 currentBlock = parseInt(currentBlockText, 10);
-                  // Simulate increase, but cap at unlockBlock to avoid exceeding it prematurely by simulation
-                  currentBlock += Math.floor(Math.random() * 5) + 1; // Simulate 1-5 new blocks per update
-                  currentBlock = Math.min(currentBlock, unlockBlock); // Cap at unlock block
-             }
+            // Check if the current text is 'Loading...' or not a number
+            if (currentBlockText === 'Loading...' || isNaN(parseInt(currentBlockText, 10))) {
+                currentBlock = initialSimulatedBlock;
+            } else {
+                currentBlock = parseInt(currentBlockText, 10);
+                // Simulate increase, but cap at unlockBlock to avoid exceeding it prematurely by simulation
+                currentBlock += Math.floor(Math.random() * 5) + 1; // Simulate 1-5 new blocks per update
+                currentBlock = Math.min(currentBlock, unlockBlock); // Cap at unlock block
+            }
 
-
-             currentBlockHeightElement.textContent = currentBlock;
-             updateBlockStatus();
-         } catch (error) {
-             console.error("Failed to fetch current block height:", error);
-             currentBlockHeightElement.textContent = 'Error';
-             blockStatus.innerHTML = '<p class="status-text">Failed to load block status.</p>';
-             blockStatus.className = 'status-indicator error';
-              // Stop countdown if block height fetching fails
+            currentBlockHeightElement.textContent = currentBlock;
+            updateBlockStatus();
+        } catch (error) {
+            console.error("Failed to fetch current block height:", error);
+            currentBlockHeightElement.textContent = 'Error';
+            blockStatus.innerHTML = '<p class="status-text">Failed to load block status.</p>';
+            blockStatus.className = 'status-indicator error';
+            // Stop countdown if block height fetching fails
             if (countdownInterval) clearInterval(countdownInterval);
-             countdownInterval = null;
-         }
-     }
+            countdownInterval = null;
+        }
+    }
 
     function updateBlockStatus() {
-         console.log(`Updating block status. Current block: ${currentBlock}, Unlock block: ${unlockBlock}`);
+        console.log(`Updating block status. Current block: ${currentBlock}, Unlock block: ${unlockBlock}`);
         const blocksRemaining = unlockBlock - currentBlock;
-         const blockStatus = document.getElementById('blockStatus'); // Re-get element
-         if (!blockStatus) {
-             console.error("blockStatus element not found in updateBlockStatus.");
-             return;
-         }
+        
+        // Re-get blockStatus element to ensure we have the latest reference
+        const blockStatus = document.getElementById('blockStatus');
+        if (!blockStatus) {
+            console.error("blockStatus element not found in updateBlockStatus.");
+            return;
+        }
 
         if (blocksRemaining <= 0) {
             blockStatus.className = 'status-indicator unlocked';
             blockStatus.innerHTML = '<p class="status-text">🎉 Time Capsule messages are now unlockable!</p>';
             progressBar.style.width = '100%';
-             // Stop the second-by-second countdown when unlocked
+            // Stop the second-by-second countdown when unlocked
             if (countdownInterval) clearInterval(countdownInterval);
-             countdownInterval = null;
-             // Ensure countdown display is zero when unlocked (if elements exist)
-              const countdownDays = document.getElementById('countdownDays');
-              const countdownHours = document.getElementById('countdownHours');
-              const countdownMinutes = document.getElementById('countdownMinutes');
-              const countdownSeconds = document.getElementById('countdownSeconds');
-             if (countdownDays) countdownDays.textContent = '0';
-             if (countdownHours) countdownHours.textContent = '00';
-             if (countdownMinutes) countdownMinutes.textContent = '00';
-             if (countdownSeconds) countdownSeconds.textContent = '00';
-
-
+            countdownInterval = null;
         } else {
             blockStatus.className = 'status-indicator pending';
-             // Rebuild or update the internal content of blockStatus if needed
-             // Ensure countdown elements are present before trying to update them
-             if (!document.getElementById('countdownDays')) {
-                  // If countdown elements are missing, rebuild the structure
-                  blockStatus.innerHTML = `<div class="countdown-grid">
-                                             <div class="countdown-item">
-                                                 <span id="countdownDays" class="countdown-value">--</span>
-                                                 <span class="countdown-label">Days</span>
-                                             </div>
-                                             <div class="countdown-item">
-                                                 <span id="countdownHours" class="countdown-value">--</span>
-                                                 <span class="countdown-label">Hours</span>
-                                             </div>
-                                             <div class="countdown-item">
-                                                 <span id="countdownMinutes" class="countdown-value">--</span>
-                                                 <span class="countdown-label">Minutes</span>
-                                             </div>
-                                             <div class="countdown-item">
-                                                 <span id="countdownSeconds" class="countdown-value">--</span>
-                                                 <span class="countdown-label">Seconds</span>
-                                             </div>
-                                         </div>
-                                         <p class="status-text">Time Capsule messages will be unlockable in approximately <span id="blocksRemaining">${blocksRemaining}</span> blocks</p>`;
-             } else {
-                 // Just update the blocks remaining text
-                 const blocksRemainingElement = document.getElementById('blocksRemaining');
-                 if (blocksRemainingElement) blocksRemainingElement.textContent = blocksRemaining;
-             }
+            
+            // Ensure countdown elements exist
+            let countdownHTML = '';
+            if (!document.getElementById('countdownDays')) {
+                countdownHTML = `
+                    <div class="countdown-grid">
+                        <div class="countdown-item">
+                            <span id="countdownDays" class="countdown-value">--</span>
+                            <span class="countdown-label">Days</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span id="countdownHours" class="countdown-value">--</span>
+                            <span class="countdown-label">Hours</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span id="countdownMinutes" class="countdown-value">--</span>
+                            <span class="countdown-label">Minutes</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span id="countdownSeconds" class="countdown-value">--</span>
+                            <span class="countdown-label">Seconds</span>
+                        </div>
+                    </div>
+                    <p class="status-text">Time Capsule messages will be unlockable in approximately <span id="blocksRemaining">${blocksRemaining}</span> blocks</p>
+                `;
+                blockStatus.innerHTML = countdownHTML;
+            } else {
+                // Just update the blocks remaining text
+                const blocksRemainingElement = document.getElementById('blocksRemaining');
+                if (blocksRemainingElement) blocksRemainingElement.textContent = blocksRemaining;
+            }
 
+            // Update progress bar - calculate percentage based on current block vs unlock block
+            const progressPercentage = Math.max(0, Math.min(100, (currentBlock / unlockBlock) * 100));
+            console.log(`Progress calculation: ${currentBlock}/${unlockBlock} = ${progressPercentage}%`);
+            progressBar.style.width = `${progressPercentage}%`;
 
-            // Update progress bar
-            const progressPercentage = (currentBlock / unlockBlock) * 100;
-            progressBar.style.width = `${Math.min(progressPercentage, 100)}%`; // Cap at 100%
+            // Calculate and display estimated time remaining based on *current time* and *blocks remaining*
+            // Assuming average block time is 10 minutes (600 seconds)
+            const estimatedSecondsRemaining = blocksRemaining * 600;
+            const now = new Date().getTime();
+            const estimatedUnlockTime = now + (estimatedSecondsRemaining * 1000); // Estimated unlock time in ms
 
-             // Calculate and display estimated time remaining based on *current time* and *blocks remaining*
-             // Assuming average block time is 10 minutes (600 seconds)
-             const estimatedSecondsRemaining = blocksRemaining * 600;
-             const now = new Date().getTime();
-             const estimatedUnlockTime = now + (estimatedSecondsRemaining * 1000); // Estimated unlock time in ms
-
-
-             // Clear previous interval to avoid multiple timers
-             if (countdownInterval) clearInterval(countdownInterval);
+            // Clear previous interval to avoid multiple timers
+            if (countdownInterval) clearInterval(countdownInterval);
 
             // Start second-by-second countdown
-             countdownInterval = setInterval(() => {
-                 const currentTime = new Date().getTime();
-                 const timeDifference = estimatedUnlockTime - currentTime;
+            countdownInterval = setInterval(() => {
+                const currentTime = new Date().getTime();
+                const timeDifference = estimatedUnlockTime - currentTime;
 
-                  const countdownDaysElement = document.getElementById('countdownDays');
-                  const countdownHoursElement = document.getElementById('countdownHours');
-                  const countdownMinutesElement = document.getElementById('countdownMinutes');
-                  const countdownSecondsElement = document.getElementById('countdownSeconds');
+                // Get countdown elements
+                const countdownDaysElement = document.getElementById('countdownDays');
+                const countdownHoursElement = document.getElementById('countdownHours');
+                const countdownMinutesElement = document.getElementById('countdownMinutes');
+                const countdownSecondsElement = document.getElementById('countdownSeconds');
 
-                 // Ensure elements exist before updating
-                 if (!countdownDaysElement || !countdownHoursElement || !countdownMinutesElement || !countdownSecondsElement) {
-                      console.error("Countdown elements not found during interval update.");
-                      clearInterval(countdownInterval);
-                      countdownInterval = null;
-                      return;
-                 }
+                // Ensure elements exist before updating
+                if (!countdownDaysElement || !countdownHoursElement || !countdownMinutesElement || !countdownSecondsElement) {
+                    console.error("Countdown elements not found during interval update.");
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    return;
+                }
 
+                if (timeDifference <= 0) {
+                    countdownDaysElement.textContent = '0';
+                    countdownHoursElement.textContent = '00';
+                    countdownMinutesElement.textContent = '00';
+                    countdownSecondsElement.textContent = '00';
+                    // Re-run status check in case blocks updated faster
+                    fetchCurrentBlockHeight(); // Fetch new block height to check if we've reached unlock
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                } else {
+                    const totalSeconds = Math.floor(timeDifference / 1000);
+                    const seconds = totalSeconds % 60;
+                    const minutes = Math.floor((totalSeconds / 60) % 60);
+                    const hours = Math.floor((totalSeconds / 3600) % 24);
+                    const days = Math.floor(totalSeconds / 86400);
 
-                 if (timeDifference <= 0) {
-                     countdownDaysElement.textContent = '0';
-                     countdownHoursElement.textContent = '00';
-                     countdownMinutesElement.textContent = '00';
-                     countdownSecondsElement.textContent = '00';
-                     updateBlockStatus(); // Re-run status check in case blocks updated faster
-                     clearInterval(countdownInterval);
-                     countdownInterval = null;
-                 } else {
-                     const totalSeconds = Math.floor(timeDifference / 1000);
-                     const seconds = totalSeconds % 60;
-                     const minutes = Math.floor((totalSeconds / 60) % 60);
-                     const hours = Math.floor((totalSeconds / 3600) % 24);
-                     const days = Math.floor(totalSeconds / 86400);
-
-                     countdownDaysElement.textContent = days;
-                     countdownHoursElement.textContent = hours.toString().padStart(2, '0');
-                     countdownMinutesElement.textContent = minutes.toString().padStart(2, '0');
-                     countdownSecondsElement.textContent = seconds.toString().padStart(2, '0');
-                 }
-             }, 1000); // Update every second
+                    countdownDaysElement.textContent = days;
+                    countdownHoursElement.textContent = hours.toString().padStart(2, '0');
+                    countdownMinutesElement.textContent = minutes.toString().padStart(2, '0');
+                    countdownSecondsElement.textContent = seconds.toString().padStart(2, '0');
+                }
+            }, 1000); // Update every second
         }
-         console.log("Block status updated.");
+        console.log("Block status updated.");
     }
 
-     // Initial fetch and update
-     fetchCurrentBlockHeight();
+    // Initial fetch and update
+    fetchCurrentBlockHeight();
 
-     // Poll for new block height periodically (e.g., every 60 seconds)
-     setInterval(fetchCurrentBlockHeight, 60000); // Adjust interval as needed (e.g., 60000 for 1 minute)
-      console.log("Block height polling started.");
+    // Poll for new block height periodically (e.g., every 60 seconds)
+    setInterval(fetchCurrentBlockHeight, 60000); // Adjust interval as needed (e.g., 60000 for 1 minute)
+    console.log("Block height polling started.");
 }
 
 // Tab functionality for Retrieve Messages section
@@ -1410,22 +1526,28 @@ function initTabs() {
 function initDonationAddressCopy() {
     console.log("Initializing donation address copy.");
     const donationAddress = document.getElementById('donationAddress');
+    
+    if (!donationAddress) {
+        console.error("Donation address element not found.");
+        return;
+    }
+    
     const donationAddressText = document.getElementById('donationAddressText');
-    const copyIcon = donationAddress ? donationAddress.querySelector('.copy-icon') : null;
-    const copyConfirmation = donationAddress ? donationAddress.querySelector('.copy-confirmation') : null;
+    const copyIcon = donationAddress.querySelector('.copy-icon');
+    const copyConfirmation = donationAddress.querySelector('.copy-confirmation');
 
-    if (!donationAddress || !donationAddressText || !copyIcon || !copyConfirmation) {
-        console.error("Donation address elements not found.");
+    if (!donationAddressText || !copyIcon || !copyConfirmation) {
+        console.error("Donation address sub-elements not found.");
         return;
     }
 
     donationAddress.style.cursor = 'pointer'; // Indicate it's clickable
 
-     // Remove existing listener before adding to prevent duplicates on re-init if any
-     const oldCopyHandler = donationAddress._copyHandler;
-     if (oldCopyHandler) {
-         donationAddress.removeEventListener('click', oldCopyHandler);
-     }
+    // Remove existing listener before adding to prevent duplicates on re-init if any
+    const oldCopyHandler = donationAddress._copyHandler;
+    if (oldCopyHandler) {
+        donationAddress.removeEventListener('click', oldCopyHandler);
+    }
 
     const newCopyHandler = async () => {
         try {
@@ -1434,17 +1556,17 @@ function initDonationAddressCopy() {
             setTimeout(() => {
                 copyConfirmation.classList.remove('show');
             }, 2000); // Show for 2 seconds
-             console.log("Donation address copied.");
+            console.log("Donation address copied.");
         } catch (err) {
             console.error('Failed to copy donation address: ', err);
-             showModal("Copy Error", "<p>Failed to copy donation address to clipboard. Please try manually.</p>");
+            showModal("Copy Error", "<p>Failed to copy donation address to clipboard. Please try manually.</p>");
         }
     };
 
-     donationAddress.addEventListener('click', newCopyHandler);
-     donationAddress._copyHandler = newCopyHandler; // Store for removal
+    donationAddress.addEventListener('click', newCopyHandler);
+    donationAddress._copyHandler = newCopyHandler; // Store for removal
 
-     console.log("Donation address copy initialized.");
+    console.log("Donation address copy initialized.");
 }
 
 // Encrypt Message and Generate Transaction (Placeholder)
@@ -1514,7 +1636,7 @@ async function encryptMessage() {
              </div>
               <div class="transaction-detail">
                  <span class="detail-label">Fee Amount:</span>
-                 <span class="detail-value">${transactionData.feeAmount} ${CONTRACT_CONFIG.network.toUpperCase()} BTC</span>
+                 <span class="detail-value">${transactionData.feeAmount} ${CONTRACT_CONFIG.network ? CONTRACT_CONFIG.network.toUpperCase() : 'SIGNET'} BTC</span>
              </div>
              <div class="transaction-detail">
                  <span class="detail-label">Unlock Block:</span>
