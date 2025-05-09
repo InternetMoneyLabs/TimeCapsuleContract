@@ -214,19 +214,202 @@ async function initWalletConnection() {
         networkStatusInterval = null;
         showModal("Wallet Disconnected", "<p>Your wallet has been disconnected.</p>");
     };
+    
+    // Handle account changes (separate from disconnection)
+    const handleAccountsChanged = async (accounts) => {
+        console.log("Wallet accounts changed:", accounts);
+        if (!accounts || accounts.length === 0) {
+            // If no accounts, treat as disconnect
+            handleDisconnect();
+            return;
+        }
+        
+        // Update the user address with the new account
+        userAddress = accounts[0].address || accounts[0];
+        
+        try {
+            // Try to get the network again
+            let networkInfo = { network: 'signet' }; // Default to signet
+            
+            if (currentWallet && currentWallet.getNetwork) {
+                try {
+                    networkInfo = await currentWallet.getNetwork();
+                } catch (networkError) {
+                    console.warn("Failed to get network after account change:", networkError);
+                }
+            }
+            
+            // Update the wallet status display
+            const walletTypeName = currentWallet ? 
+                (currentWallet.constructor ? currentWallet.constructor.name.replace('Provider', '').replace('Bitcoin', '').trim() : '') || 
+                (currentWallet._brand ? currentWallet._brand.name : 'Wallet') : 'Wallet';
+                
+            walletStatus.textContent = `Connected (${walletTypeName}): ${networkInfo.network ? networkInfo.network.toUpperCase() : 'SIGNET'}`;
+            walletConnected = true;
+            
+            // Update the encrypt button state
+            updateEncryptButtonState();
+            
+            console.log(`Wallet account changed to: ${userAddress}, Network: ${networkInfo.network || 'SIGNET'}`);
+        } catch (error) {
+            console.error("Error handling account change:", error);
+        }
+    };
+    
+    // Handle network changes
+    const handleNetworkChanged = async (network) => {
+        console.log("Wallet network changed:", network);
+        try {
+            // Update the current network
+            if (typeof network === 'string') {
+                currentNetwork = { network: network.toLowerCase() };
+            } else if (network && network.network) {
+                currentNetwork = network;
+            } else if (currentWallet && currentWallet.getNetwork) {
+                try {
+                    currentNetwork = await currentWallet.getNetwork();
+                } catch (networkError) {
+                    console.warn("Failed to get network after network change:", networkError);
+                    currentNetwork = { network: 'signet' }; // Default to signet
+                }
+            } else {
+                // Default to signet if we can't get the network
+                currentNetwork = { network: 'signet' };
+            }
+            
+            // Update the wallet status display
+            const walletTypeName = currentWallet ? 
+                (currentWallet.constructor ? currentWallet.constructor.name.replace('Provider', '').replace('Bitcoin', '').trim() : '') || 
+                (currentWallet._brand ? currentWallet._brand.name : 'Wallet') : 'Wallet';
+                
+            walletStatus.textContent = `Connected (${walletTypeName}): ${currentNetwork.network ? currentNetwork.network.toUpperCase() : 'SIGNET'}`;
+            
+            // Check if the network is correct
+            if (currentNetwork.network !== CONTRACT_CONFIG.network) {
+                encryptMessageBtn.textContent = "Wrong Network";
+                encryptMessageBtn.disabled = true;
+                promptNetworkSwitch(walletTypeName);
+            } else {
+                // Update the encrypt button state
+                updateEncryptButtonState();
+            }
+            
+            console.log(`Wallet network changed to: ${currentNetwork.network || 'unknown'}`);
+        } catch (error) {
+            console.error("Error handling network change:", error);
+        }
+    };
+    
+    // Handle account changes (separate from disconnection)
+    const handleAccountsChanged = async (accounts) => {
+        console.log("Wallet accounts changed:", accounts);
+        if (!accounts || accounts.length === 0) {
+            // If no accounts, treat as disconnect
+            handleDisconnect();
+            return;
+        }
+        
+        // Update the user address with the new account
+        userAddress = accounts[0].address || accounts[0];
+        
+        try {
+            // Try to get the network again
+            if (currentWallet && currentWallet.getNetwork) {
+                currentNetwork = await currentWallet.getNetwork();
+            } else {
+                // Default to signet if we can't get the network
+                currentNetwork = { network: 'signet' };
+            }
+            
+            // Update the wallet status display
+            const walletTypeName = currentWallet ? 
+                (currentWallet.constructor.name.replace('Provider', '').replace('Bitcoin', '').trim() || 
+                (currentWallet._brand ? currentWallet._brand.name : 'Wallet')) : 'Wallet';
+                
+            walletStatus.textContent = `Connected (${walletTypeName}): ${currentNetwork.network ? currentNetwork.network.toUpperCase() : 'SIGNET'}`;
+            walletConnected = true;
+            
+            // Update the encrypt button state
+            updateEncryptButtonState();
+            
+            console.log(`Wallet account changed to: ${userAddress}, Network: ${currentNetwork.network || 'SIGNET'}`);
+        } catch (error) {
+            console.error("Error handling account change:", error);
+        }
+    };
+    
+    // Handle network changes
+    const handleNetworkChanged = async (network) => {
+        console.log("Wallet network changed:", network);
+        try {
+            // Update the current network
+            if (typeof network === 'string') {
+                currentNetwork = { network: network.toLowerCase() };
+            } else if (network && network.network) {
+                currentNetwork = network;
+            } else if (currentWallet && currentWallet.getNetwork) {
+                currentNetwork = await currentWallet.getNetwork();
+            } else {
+                // Default to signet if we can't get the network
+                currentNetwork = { network: 'signet' };
+            }
+            
+            // Update the wallet status display
+            const walletTypeName = currentWallet ? 
+                (currentWallet.constructor.name.replace('Provider', '').replace('Bitcoin', '').trim() || 
+                (currentWallet._brand ? currentWallet._brand.name : 'Wallet')) : 'Wallet';
+                
+            walletStatus.textContent = `Connected (${walletTypeName}): ${currentNetwork.network ? currentNetwork.network.toUpperCase() : 'SIGNET'}`;
+            
+            // Check if the network is correct
+            if (currentNetwork.network !== CONTRACT_CONFIG.network) {
+                encryptMessageBtn.textContent = "Wrong Network";
+                encryptMessageBtn.disabled = true;
+                promptNetworkSwitch(walletTypeName);
+            } else {
+                // Update the encrypt button state
+                updateEncryptButtonState();
+            }
+            
+            console.log(`Wallet network changed to: ${currentNetwork.network || 'unknown'}`);
+        } catch (error) {
+            console.error("Error handling network change:", error);
+        }
+    };
 
     // Add event listeners for wallet providers
     if (window.bitcoin && window.bitcoin.on) {
         console.log("Adding Bitcoin provider listeners.");
-        window.bitcoin.on('accountsChanged', handleDisconnect);
-        window.bitcoin.on('networkChanged', handleDisconnect);
+        window.bitcoin.on('accountsChanged', handleAccountsChanged);
+        window.bitcoin.on('networkChanged', handleNetworkChanged);
+        window.bitcoin.on('disconnect', handleDisconnect);
         // Check initial connection via this provider if it exists
         checkInitialConnection();
     } else if (window.unisat && window.unisat.on) {
         console.log("Adding Unisat provider listeners.");
-        window.unisat.on('accountsChanged', handleDisconnect);
-        window.unisat.on('networkChanged', handleDisconnect);
+        window.unisat.on('accountsChanged', async (accounts) => {
+            console.log("Unisat accounts changed:", accounts);
+            await handleAccountsChanged(accounts);
+        });
+        window.unisat.on('networkChanged', async (network) => {
+            console.log("Unisat network changed:", network);
+            await handleNetworkChanged(network);
+        });
+        window.unisat.on('disconnect', handleDisconnect);
         // Check initial connection via this provider if it exists
+        checkInitialConnection();
+    } else if (typeof window.okxwallet !== 'undefined' && typeof window.okxwallet.bitcoin !== 'undefined' && window.okxwallet.bitcoin.on) {
+        console.log("Adding OKX wallet provider listeners.");
+        window.okxwallet.bitcoin.on('accountsChanged', async (accounts) => {
+            console.log("OKX accounts changed:", accounts);
+            await handleAccountsChanged(accounts);
+        });
+        window.okxwallet.bitcoin.on('networkChanged', async (network) => {
+            console.log("OKX network changed:", network);
+            await handleNetworkChanged(network);
+        });
+        window.okxwallet.bitcoin.on('disconnect', handleDisconnect);
+        // Check initial connection
         checkInitialConnection();
     } else if (typeof window.satsconnect !== 'undefined') {
         console.log("Sats Connect API detected. Checking initial connection via Sats Connect.");
@@ -310,60 +493,97 @@ async function initWalletConnection() {
 async function checkInitialConnection() {
      console.log("Checking for initial wallet connection.");
      try {
-        // Check for Sats Connect first as it can represent multiple wallets
+        // Check for Unisat first
+        if (typeof window.unisat !== 'undefined') {
+            try {
+                console.log("Checking Unisat initial connection");
+                const accounts = await window.unisat.requestAccounts();
+                if (accounts && accounts.length > 0) {
+                    console.log("Initial Unisat account found:", accounts[0]);
+                    userAddress = accounts[0];
+                    userPublicKey = null; // May not be available
+                    
+                    // Get network
+                    let currentNetwork = { network: 'signet' }; // Default
+                    try {
+                        currentNetwork = await window.unisat.getNetwork();
+                    } catch (networkError) {
+                        console.warn("Failed to get Unisat network:", networkError);
+                    }
+                    
+                    // Set up wallet interface
+                    currentWallet = window.unisat;
+                    
+                    // Update UI
+                    handleInitialWalletConnection('Unisat', currentNetwork);
+                    return;
+                }
+            } catch (error) {
+                console.warn("Error checking Unisat initial connection:", error);
+            }
+        }
+        
+        // Check for OKX
+        if (typeof window.okxwallet !== 'undefined' && typeof window.okxwallet.bitcoin !== 'undefined') {
+            try {
+                console.log("Checking OKX initial connection");
+                const connectResult = await window.okxwallet.bitcoin.connect();
+                if (connectResult && connectResult.address) {
+                    console.log("Initial OKX account found:", connectResult.address);
+                    userAddress = connectResult.address;
+                    userPublicKey = connectResult.publicKey || null;
+                    
+                    // Get network
+                    let currentNetwork = { network: 'signet' }; // Default
+                    try {
+                        currentNetwork = await window.okxwallet.bitcoin.getNetwork();
+                    } catch (networkError) {
+                        console.warn("Failed to get OKX network:", networkError);
+                    }
+                    
+                    // Set up wallet interface
+                    currentWallet = window.okxwallet.bitcoin;
+                    
+                    // Update UI
+                    handleInitialWalletConnection('OKX', currentNetwork);
+                    return;
+                }
+            } catch (error) {
+                console.warn("Error checking OKX initial connection:", error);
+            }
+        }
+        
+        // Check for Sats Connect (Xverse, Leather)
         if (typeof window.satsconnect !== 'undefined') {
             console.log("Attempting Sats Connect wallet_getAccount.");
-            const response = await window.satsconnect.request('wallet_getAccount', {
-                 addresses: ['ordinals', 'payment']
-             });
+            try {
+                const response = await window.satsconnect.request('wallet_getAccount', {
+                     addresses: ['ordinals', 'payment']
+                });
 
-            if (response.status === 'success' && response.result && response.result.addresses && response.result.addresses.length > 0) {
-                 console.log("Initial Sats Connect account found.");
-                 // Assume Xverse or Leather if using Sats Connect
-                 const walletType = typeof window.BitcoinProvider !== 'undefined' ? 'Xverse' : (typeof window.Leather !== 'undefined' || typeof window.StacksProvider !== 'undefined' ? 'Leather' : 'Unknown');
+                if (response.status === 'success' && response.result && response.result.addresses && response.result.addresses.length > 0) {
+                     console.log("Initial Sats Connect account found.");
+                     // Determine wallet type
+                     const walletType = typeof window.BitcoinProvider !== 'undefined' ? 'Xverse' : 
+                                      (typeof window.Leather !== 'undefined' || typeof window.StacksProvider !== 'undefined' ? 'Leather' : 'Unknown');
 
-                const accounts = response.result.addresses;
-                userAddress = accounts[0].address || accounts[0].address; // Use .address property
-                userPublicKey = accounts[0].publicKey || null; // May not be available for all wallets/methods
+                    const accounts = response.result.addresses;
+                    userAddress = accounts[0].address || accounts[0].address; // Use .address property
+                    userPublicKey = accounts[0].publicKey || null; // May not be available for all wallets/methods
 
-                // Find the network
-                const paymentAddressInfo = accounts.find(acc => acc.purpose === 'payment');
-                let currentNetwork = 'unknown';
-                if (paymentAddressInfo && paymentAddressInfo.network) {
-                     currentNetwork = paymentAddressInfo.network.toLowerCase();
-                }
+                    // Find the network
+                    const paymentAddressInfo = accounts.find(acc => acc.purpose === 'payment');
+                    let currentNetwork = { network: 'signet' }; // Default
+                    if (paymentAddressInfo && paymentAddressInfo.network) {
+                         currentNetwork = { network: paymentAddressInfo.network.toLowerCase() };
+                    }
 
-                 const walletStatus = document.getElementById('walletStatus');
-                 const connectWalletButton = document.getElementById('connectWallet');
-                 const encryptMessageBtn = document.getElementById('encryptMessageBtn');
-
-
-                if (currentNetwork !== CONTRACT_CONFIG.network) {
-                    if (walletStatus) walletStatus.textContent = `Connected (${walletType}): Wrong network (${currentNetwork ? currentNetwork.toUpperCase() : 'UNKNOWN'}).`;
-                     promptNetworkSwitch(walletType); // Prompt user to switch
-                     // Keep connected state true but indicate wrong network
-                     walletConnected = true; // Still connected, just on wrong network
-                     if (connectWalletButton) connectWalletButton.style.display = 'none'; // Hide connect button
-                     if (encryptMessageBtn) {
-                        encryptMessageBtn.textContent = "Wrong Network";
-                        encryptMessageBtn.disabled = true;
-                     }
-
-                } else {
-                     if (walletStatus) walletStatus.textContent = `Connected (${walletType}): ${currentNetwork ? currentNetwork.toUpperCase() : 'UNKNOWN'}`;
-                     walletConnected = true;
-                     if (connectWalletButton) connectWalletButton.style.display = 'none'; // Hide connect button
-                     if (encryptMessageBtn) {
-                        encryptMessageBtn.textContent = "Encrypt & Generate Transaction";
-                        encryptMessageBtn.disabled = false;
-                     }
-
-                     console.log(`Initial connection found: ${walletType} wallet connected. Address: ${userAddress}, Public Key: ${userPublicKey}`);
-                      // Set a placeholder currentWallet for Sats Connect methods
+                     // Set a placeholder currentWallet for Sats Connect methods
                      currentWallet = {
+                         _brand: { name: walletType }, // Add brand for identification
                          // Simulate methods using satsconnect requests
                          signPsbt: async (psbtHex, options) => {
-                             console.log("Using Sats Connect signPsbt");
+                             console.log(`Using Sats Connect signPsbt for ${walletType}`);
                              const signResponse = await window.satsconnect.request('wallet_signPsbt', {
                                 psbtHex: psbtHex,
                                 network: CONTRACT_CONFIG.network,
@@ -372,11 +592,11 @@ async function checkInitialConnection() {
                              if (signResponse.status === 'success') {
                                  return signResponse.result.psbtHex;
                              } else {
-                                 throw new Error(signResponse.error || 'PSBT signing failed (Sats Connect).');
+                                 throw new Error(signResponse.error || `PSBT signing failed (${walletType}).`);
                              }
                         },
                          pushTx: async (signedTxHex) => {
-                              console.log("Using Sats Connect pushTx");
+                              console.log(`Using Sats Connect pushTx for ${walletType}`);
                               const pushResponse = await window.satsconnect.request('wallet_pushTx', {
                                  txHex: signedTxHex,
                                   network: CONTRACT_CONFIG.network
@@ -384,34 +604,56 @@ async function checkInitialConnection() {
                               if (pushResponse.status === 'success') {
                                   return pushResponse.result.txId;
                               } else {
-                                   throw new Error(pushResponse.error || 'Transaction push failed (Sats Connect).');
+                                   throw new Error(pushResponse.error || `Transaction push failed (${walletType}).`);
                               }
                          },
-                          // Add other simulated methods if needed, e.g., getNetwork, requestAccounts
-                         getNetwork: async () => ({ network: currentNetwork }), // Simulate getNetwork
-                         requestAccounts: async () => accounts.map(acc => acc.address), // Simulate requestAccounts
+                         getNetwork: async () => currentNetwork,
+                         requestAccounts: async () => accounts.map(acc => acc.address),
                      };
-                      startNetworkStatusMonitoring(); // Start monitoring
+                     
+                     // Update UI
+                     handleInitialWalletConnection(walletType, currentNetwork);
+                     return;
                 }
-            } else {
-                console.log("No initial Sats Connect account found.");
-                 // If Sats Connect didn't find an account, check other specific providers if necessary
-                 // Note: Unisat might expose window.unisat even if Sats Connect fails, or vice versa.
-                 // The logic flow for checking providers can be complex depending on how they inject themselves.
-                 // The current structure attempts Sats Connect, then relies on button click for others if Sats Connect doesn't connect initially.
+            } catch (error) {
+                console.warn("Error checking Sats Connect initial connection:", error);
             }
-        } else {
-            console.log("Sats Connect API not detected.");
-            // Fallback to checking other providers directly if Sats Connect is not available
-            // This might be redundant if Sats Connect is the primary intended method for Xverse/Leather.
-            // Re-evaluate if direct checks for window.BitcoinProvider or window.Leather are truly needed
-            // or if Sats Connect is the intended single point of interaction for them.
         }
+        
+        console.log("No initial wallet connection found.");
      } catch (error) {
-         console.warn("Error during initial Sats Connect wallet connection check:", error);
-         // This catch block handles errors during the *check* itself (e.g., API not ready),
-         // not necessarily that a wallet isn't connected.
+         console.warn("Error during initial wallet connection check:", error);
      }
+}
+
+// Helper function to handle initial wallet connection UI updates
+function handleInitialWalletConnection(walletType, currentNetwork) {
+    const walletStatus = document.getElementById('walletStatus');
+    const connectWalletButton = document.getElementById('connectWallet');
+    const encryptMessageBtn = document.getElementById('encryptMessageBtn');
+    
+    if (currentNetwork.network !== CONTRACT_CONFIG.network) {
+        if (walletStatus) walletStatus.textContent = `Connected (${walletType}): Wrong network (${currentNetwork.network ? currentNetwork.network.toUpperCase() : 'UNKNOWN'}).`;
+        promptNetworkSwitch(walletType); // Prompt user to switch
+        // Keep connected state true but indicate wrong network
+        walletConnected = true; // Still connected, just on wrong network
+        if (connectWalletButton) connectWalletButton.style.display = 'none'; // Hide connect button
+        if (encryptMessageBtn) {
+            encryptMessageBtn.textContent = "Wrong Network";
+            encryptMessageBtn.disabled = true;
+        }
+    } else {
+        if (walletStatus) walletStatus.textContent = `Connected (${walletType}): ${currentNetwork.network ? currentNetwork.network.toUpperCase() : 'SIGNET'}`;
+        walletConnected = true;
+        if (connectWalletButton) connectWalletButton.style.display = 'none'; // Hide connect button
+        if (encryptMessageBtn) {
+            encryptMessageBtn.textContent = "Encrypt & Generate Transaction";
+            encryptMessageBtn.disabled = false;
+        }
+        
+        console.log(`Initial connection found: ${walletType} wallet connected. Address: ${userAddress}, Public Key: ${userPublicKey}`);
+        startNetworkStatusMonitoring(); // Start monitoring
+    }
 }
 
 
@@ -1041,21 +1283,67 @@ async function promptNetworkSwitch(walletType) {
 
 
 function startNetworkStatusMonitoring() {
-     console.log("Starting network status monitoring.");
-     // Clear any existing interval
+    console.log("Starting network status monitoring.");
+    // Clear any existing interval
     if (networkStatusInterval) clearInterval(networkStatusInterval);
 
-    // Poll the wallet's network status periodically (if getNetwork is available)
-    if (currentWallet && currentWallet.getNetwork) {
-         networkStatusInterval = setInterval(async () => {
-            try {
-                const network = await currentWallet.getNetwork();
+    // Poll the wallet's network status periodically
+    networkStatusInterval = setInterval(async () => {
+        try {
+            let network = { network: 'unknown' };
+            
+            // Try to get network from wallet
+            if (currentWallet && currentWallet.getNetwork) {
+                try {
+                    network = await currentWallet.getNetwork();
+                } catch (error) {
+                    console.warn("Failed to get network from wallet.getNetwork():", error);
+                }
+            }
+            
+            // If network is still unknown, try alternative methods
+            if (!network || !network.network || network.network === 'unknown') {
+                // Try Unisat specific method
+                if (window.unisat) {
+                    try {
+                        const unisatNetwork = await window.unisat.getNetwork();
+                        if (unisatNetwork) {
+                            network = { network: unisatNetwork.toLowerCase() };
+                            console.log("Got network from window.unisat.getNetwork():", network);
+                        }
+                    } catch (error) {
+                        console.warn("Failed to get network from window.unisat.getNetwork():", error);
+                    }
+                }
+                
+                // Try OKX specific method
+                if (window.okxwallet && window.okxwallet.bitcoin) {
+                    try {
+                        const okxNetwork = await window.okxwallet.bitcoin.getNetwork();
+                        if (okxNetwork) {
+                            network = okxNetwork;
+                            console.log("Got network from window.okxwallet.bitcoin.getNetwork():", network);
+                        }
+                    } catch (error) {
+                        console.warn("Failed to get network from window.okxwallet.bitcoin.getNetwork():", error);
+                    }
+                }
+                
+                // If still unknown, default to signet
+                if (!network || !network.network || network.network === 'unknown') {
+                    network = { network: 'signet' };
+                    console.log("Defaulting to signet network");
+                }
+            }
                 const walletStatus = document.getElementById('walletStatus');
                  const encryptMessageBtn = document.getElementById('encryptMessageBtn');
                  // Attempt to get a cleaner wallet name
-                 const walletTypeName = currentWallet.constructor.name.replace('Provider', '').replace('Bitcoin', '').trim() || (currentWallet._brand ? currentWallet._brand.name : 'Wallet'); // Use _brand for Sats Connect simulation
+                 const walletTypeName = currentWallet ? 
+                    (currentWallet.constructor ? currentWallet.constructor.name.replace('Provider', '').replace('Bitcoin', '').trim() : '') || 
+                    (currentWallet._brand ? currentWallet._brand.name : 'Wallet') : 'Wallet';
+                    
                 if (network.network !== CONTRACT_CONFIG.network) {
-            if (walletStatus) walletStatus.textContent = `Connected (${walletTypeName}): Wrong network (${network.network ? network.network.toUpperCase() : 'UNKNOWN'}).`;
+                    if (walletStatus) walletStatus.textContent = `Connected (${walletTypeName}): Wrong network (${network.network ? network.network.toUpperCase() : 'UNKNOWN'}).`;
                      if (encryptMessageBtn) {
                           encryptMessageBtn.textContent = "Wrong Network";
                           encryptMessageBtn.disabled = true;
@@ -1063,7 +1351,7 @@ function startNetworkStatusMonitoring() {
                      // Optionally, prompt network switch again, but avoid excessive prompts
                      // promptNetworkSwitch(walletTypeName); // Avoid prompting automatically in polling
                 } else {
-                     if (walletStatus) walletStatus.textContent = `Connected (${walletTypeName}): ${network.network ? network.network.toUpperCase() : 'UNKNOWN'}`;
+                     if (walletStatus) walletStatus.textContent = `Connected (${walletTypeName}): ${network.network ? network.network.toUpperCase() : 'SIGNET'}`;
                       if (walletConnected && encryptMessageBtn && encryptMessageBtn.textContent !== "Encrypt & Generate Transaction") {
                          // If connected, on the correct network, and button state is not 'Encrypt', update it
                           const messageInput = document.getElementById('message');
@@ -1094,6 +1382,19 @@ function startNetworkStatusMonitoring() {
                 console.error("Failed to get network status during monitoring:", error);
                  // Handle cases where wallet becomes unavailable
                  if (walletConnected) {
+                    // Try to recover the connection before disconnecting
+                    try {
+                        if (window.unisat) {
+                            const accounts = await window.unisat.requestAccounts();
+                            if (accounts && accounts.length > 0) {
+                                console.log("Recovered wallet connection during monitoring");
+                                continue; // Skip disconnection logic
+                            }
+                        }
+                    } catch (recoveryError) {
+                        console.warn("Failed to recover wallet connection:", recoveryError);
+                    }
+                    
                     document.getElementById('walletStatus').textContent = 'Wallet Status: Connection Lost';
                     walletConnected = false;
                      userAddress = null;
@@ -1107,14 +1408,69 @@ function startNetworkStatusMonitoring() {
                     showModal("Wallet Disconnected", "<p>Your wallet connection was lost.</p>");
                  }
             }
-        }, 10000); // Check every 10 seconds
+        }, 5000); // Check every 5 seconds
     } else {
-        console.warn("Current wallet does not support getNetwork method. Network status will not be actively monitored.");
+        console.warn("Current wallet does not support getNetwork method. Using alternative monitoring approach.");
+        
+        // Alternative monitoring approach for wallets without getNetwork
+        networkStatusInterval = setInterval(async () => {
+            try {
+                // For Unisat
+                if (window.unisat) {
+                    try {
+                        const accounts = await window.unisat.requestAccounts();
+                        if (accounts && accounts.length > 0) {
+                            userAddress = accounts[0];
+                            
+                            // Try to get network
+                            let network = { network: 'signet' }; // Default
+                            try {
+                                const unisatNetwork = await window.unisat.getNetwork();
+                                if (unisatNetwork) {
+                                    network = { network: unisatNetwork.toLowerCase() };
+                                }
+                            } catch (networkError) {
+                                console.warn("Failed to get Unisat network:", networkError);
+                            }
+                            
+                            // Update UI
+                            const walletStatus = document.getElementById('walletStatus');
+                            if (walletStatus) {
+                                walletStatus.textContent = `Connected (Unisat): ${network.network.toUpperCase()}`;
+                            }
+                            
+                            // Update button state
+                            const encryptMessageBtn = document.getElementById('encryptMessageBtn');
+                            if (encryptMessageBtn && network.network === CONTRACT_CONFIG.network) {
+                                const messageInput = document.getElementById('message');
+                                const text = messageInput ? messageInput.value : '';
+                                if (text.trim() !== '') {
+                                    encryptMessageBtn.textContent = "Encrypt & Generate Transaction";
+                                    encryptMessageBtn.disabled = false;
+                                }
+                            }
+                            
+                            // Ensure wallet state is correct
+                            walletConnected = true;
+                            currentWallet = window.unisat;
+                        }
+                    } catch (error) {
+                        console.warn("Failed to check Unisat connection:", error);
+                    }
+                }
+            } catch (error) {
+                console.error("Error in alternative wallet monitoring:", error);
+            }
+        }, 5000);
+         
          // Display connected status without network details if getNetwork is not available
          const walletStatus = document.getElementById('walletStatus');
-          const walletTypeName = currentWallet ? (currentWallet.constructor.name.replace('Provider', '').replace('Bitcoin', '').trim() || (currentWallet._brand ? currentWallet._brand.name : 'Unknown Wallet')) : 'Unknown';
-         if (walletStatus) walletStatus.textContent = `Connected (via ${walletTypeName})`;
+          const walletTypeName = currentWallet ? 
+            (currentWallet.constructor ? currentWallet.constructor.name.replace('Provider', '').replace('Bitcoin', '').trim() : '') || 
+            (currentWallet._brand ? currentWallet._brand.name : 'Wallet') : 'Wallet';
+         if (walletStatus) walletStatus.textContent = `Connected (${walletTypeName}): SIGNET`;
     }
+}
 }
 
 
@@ -1356,27 +1712,96 @@ function initMessageInput() {
          document.getElementById('signTransaction').style.display = 'none';
     });
 
-     // Function to update the state of the encrypt button
-     const updateEncryptButtonState = () => {
-        const text = messageInput.value.trim(); // Use trimmed value for empty check
-        const characters = text.length;
-        const bytes = new TextEncoder().encode(text).length;
+// Function to update the state of the encrypt button
+function updateEncryptButtonState() {
+    const encryptButton = document.getElementById('encryptMessageBtn');
+    const messageInput = document.getElementById('message');
+    
+    if (!encryptButton || !messageInput) {
+        console.error("Encrypt button or message input not found");
+        return;
+    }
+    
+    const text = messageInput.value.trim(); // Use trimmed value for empty check
+    const characters = text.length;
+    const bytes = new TextEncoder().encode(text).length;
 
-        if (characters > 150 || bytes > 80 || !walletConnected || text === '') {
-            encryptButton.disabled = true;
-            if (!walletConnected) {
-                encryptButton.textContent = "Connect Wallet First";
-            } else if (text === '') {
-                 encryptButton.textContent = "Enter Message";
-            }
-            else {
-               encryptButton.textContent = "Message Too Long";
-            }
-        } else {
-            encryptButton.disabled = false;
-            encryptButton.textContent = "Encrypt & Generate Transaction";
+    // Check wallet connection first
+    if (!walletConnected) {
+        encryptButton.disabled = true;
+        encryptButton.textContent = "Connect Wallet First";
+        return;
+    }
+    
+    // Check if we have a current wallet object
+    if (!currentWallet) {
+        // Try to recover the wallet connection
+        let recovered = false;
+        
+        // Try Unisat
+        if (window.unisat) {
+            window.unisat.requestAccounts().then(accounts => {
+                if (accounts && accounts.length > 0) {
+                    userAddress = accounts[0];
+                    currentWallet = window.unisat;
+                    walletConnected = true;
+                    console.log("Recovered wallet connection in updateEncryptButtonState");
+                    // Re-run this function after recovery
+                    updateEncryptButtonState();
+                    recovered = true;
+                }
+            }).catch(error => {
+                console.warn("Failed to recover Unisat wallet connection:", error);
+            });
         }
-     };
+        
+        // Try OKX if Unisat failed
+        if (!recovered && window.okxwallet && window.okxwallet.bitcoin) {
+            window.okxwallet.bitcoin.connect().then(result => {
+                if (result && result.address) {
+                    userAddress = result.address;
+                    currentWallet = window.okxwallet.bitcoin;
+                    walletConnected = true;
+                    console.log("Recovered OKX wallet connection in updateEncryptButtonState");
+                    // Re-run this function after recovery
+                    updateEncryptButtonState();
+                    recovered = true;
+                }
+            }).catch(error => {
+                console.warn("Failed to recover OKX wallet connection:", error);
+            });
+        }
+        
+        // If recovery is in progress, disable button temporarily
+        encryptButton.disabled = true;
+        encryptButton.textContent = "Reconnecting Wallet...";
+        return;
+    }
+    
+    // Check network if we can
+    let isCorrectNetwork = true; // Assume correct network if we can't check
+    if (currentNetwork && currentNetwork.network) {
+        isCorrectNetwork = currentNetwork.network === CONTRACT_CONFIG.network;
+    }
+    
+    if (!isCorrectNetwork) {
+        encryptButton.disabled = true;
+        encryptButton.textContent = "Wrong Network";
+        return;
+    }
+    
+    // Finally check message constraints
+    if (characters > 150 || bytes > 80) {
+        encryptButton.disabled = true;
+        encryptButton.textContent = "Message Too Long";
+    } else if (text === '') {
+        encryptButton.disabled = true;
+        encryptButton.textContent = "Enter Message";
+    } else {
+        encryptButton.disabled = false;
+        encryptButton.textContent = "Encrypt & Generate Transaction";
+    }
+}
 
      // Initial check on page load
      updateEncryptButtonState();
@@ -1695,10 +2120,109 @@ function initDonationAddressCopy() {
 // Encrypt Message and Generate Transaction (Placeholder)
 async function encryptMessage() {
     console.log("Encrypt message button clicked.");
-    if (!walletConnected || !currentWallet) {
+    
+    // Double-check wallet connection status
+    if (!walletConnected) {
+        console.warn("Wallet not connected according to walletConnected flag");
         showModal("Wallet Required", "<p>Please connect your wallet first.</p>");
-        console.warn("Encrypt attempt failed: Wallet not connected.");
         return;
+    }
+    
+    if (!currentWallet) {
+        console.warn("currentWallet is null or undefined");
+        
+        // Try to recover the wallet connection if possible
+        let recovered = false;
+        
+        // Try Unisat
+        if (window.unisat) {
+            try {
+                console.log("Attempting to recover Unisat wallet connection");
+                const accounts = await window.unisat.requestAccounts();
+                if (accounts && accounts.length > 0) {
+                    userAddress = accounts[0];
+                    currentWallet = window.unisat;
+                    walletConnected = true;
+                    console.log("Recovered Unisat wallet connection");
+                    recovered = true;
+                }
+            } catch (error) {
+                console.error("Failed to recover Unisat wallet connection:", error);
+            }
+        }
+        
+        // Try OKX
+        if (!recovered && window.okxwallet && window.okxwallet.bitcoin) {
+            try {
+                console.log("Attempting to recover OKX wallet connection");
+                const connectResult = await window.okxwallet.bitcoin.connect();
+                if (connectResult && connectResult.address) {
+                    userAddress = connectResult.address;
+                    currentWallet = window.okxwallet.bitcoin;
+                    walletConnected = true;
+                    console.log("Recovered OKX wallet connection");
+                    recovered = true;
+                }
+            } catch (error) {
+                console.error("Failed to recover OKX wallet connection:", error);
+            }
+        }
+        
+        // Try Xverse via satsconnect
+        if (!recovered && window.satsconnect) {
+            try {
+                console.log("Attempting to recover Xverse wallet connection via satsconnect");
+                const response = await window.satsconnect.request('wallet_getAccount', {
+                    addresses: ['ordinals', 'payment']
+                });
+                
+                if (response.status === 'success' && response.result && response.result.addresses && response.result.addresses.length > 0) {
+                    const accounts = response.result.addresses;
+                    userAddress = accounts[0].address;
+                    
+                    // Set up wallet interface
+                    currentWallet = {
+                        requestAccounts: async () => accounts.map(acc => acc.address),
+                        getNetwork: async () => ({ network: 'signet' }),
+                        signPsbt: async (psbtHex, options) => {
+                            const signResponse = await window.satsconnect.request('wallet_signPsbt', {
+                                psbtHex: psbtHex,
+                                network: CONTRACT_CONFIG.network,
+                                ...options
+                            });
+                            if (signResponse.status === 'success') {
+                                return signResponse.result.psbtHex;
+                            } else {
+                                throw new Error(signResponse.error || 'PSBT signing failed (Sats Connect).');
+                            }
+                        },
+                        pushTx: async (signedTxHex) => {
+                            const pushResponse = await window.satsconnect.request('wallet_pushTx', {
+                                txHex: signedTxHex,
+                                network: CONTRACT_CONFIG.network
+                            });
+                            if (pushResponse.status === 'success') {
+                                return pushResponse.result.txId;
+                            } else {
+                                throw new Error(pushResponse.error || 'Transaction push failed (Sats Connect).');
+                            }
+                        }
+                    };
+                    
+                    walletConnected = true;
+                    console.log("Recovered wallet connection via satsconnect");
+                    recovered = true;
+                }
+            } catch (error) {
+                console.error("Failed to recover wallet connection via satsconnect:", error);
+            }
+        }
+        
+        if (!recovered) {
+            showModal("Wallet Required", "<p>Please connect your wallet first.</p>");
+            console.warn("Encrypt attempt failed: Wallet not connected and recovery failed.");
+            return;
+        }
     }
 
     const messageInput = document.getElementById('message');
@@ -1794,9 +2318,102 @@ async function encryptMessage() {
 async function signAndSubmitTransaction(psbtHex) {
     console.log("Sign and Submit button clicked.");
     if (!walletConnected || !currentWallet) {
-        showModal("Wallet Required", "<p>Please connect your wallet first.</p>");
-         console.warn("Sign attempt failed: Wallet not connected.");
-        return;
+        // Try to recover wallet connection before showing error
+        let recovered = false;
+        
+        // Try Unisat
+        if (window.unisat) {
+            try {
+                console.log("Attempting to recover Unisat wallet connection");
+                const accounts = await window.unisat.requestAccounts();
+                if (accounts && accounts.length > 0) {
+                    userAddress = accounts[0];
+                    currentWallet = window.unisat;
+                    walletConnected = true;
+                    console.log("Recovered Unisat wallet connection");
+                    recovered = true;
+                }
+            } catch (error) {
+                console.error("Failed to recover Unisat wallet connection:", error);
+            }
+        }
+        
+        // Try OKX
+        if (!recovered && window.okxwallet && window.okxwallet.bitcoin) {
+            try {
+                console.log("Attempting to recover OKX wallet connection");
+                const connectResult = await window.okxwallet.bitcoin.connect();
+                if (connectResult && connectResult.address) {
+                    userAddress = connectResult.address;
+                    currentWallet = window.okxwallet.bitcoin;
+                    walletConnected = true;
+                    console.log("Recovered OKX wallet connection");
+                    recovered = true;
+                }
+            } catch (error) {
+                console.error("Failed to recover OKX wallet connection:", error);
+            }
+        }
+        
+        // Try Xverse/Leather via satsconnect
+        if (!recovered && window.satsconnect) {
+            try {
+                console.log("Attempting to recover wallet connection via satsconnect");
+                const response = await window.satsconnect.request('wallet_getAccount', {
+                    addresses: ['ordinals', 'payment']
+                });
+                
+                if (response.status === 'success' && response.result && response.result.addresses && response.result.addresses.length > 0) {
+                    const walletType = typeof window.BitcoinProvider !== 'undefined' ? 'Xverse' : 
+                                     (typeof window.Leather !== 'undefined' || typeof window.StacksProvider !== 'undefined' ? 'Leather' : 'Unknown');
+                    
+                    const accounts = response.result.addresses;
+                    userAddress = accounts[0].address;
+                    
+                    // Set up wallet interface
+                    currentWallet = {
+                        _brand: { name: walletType },
+                        requestAccounts: async () => accounts.map(acc => acc.address),
+                        getNetwork: async () => ({ network: 'signet' }),
+                        signPsbt: async (psbtHex, options) => {
+                            const signResponse = await window.satsconnect.request('wallet_signPsbt', {
+                                psbtHex: psbtHex,
+                                network: CONTRACT_CONFIG.network,
+                                ...options
+                            });
+                            if (signResponse.status === 'success') {
+                                return signResponse.result.psbtHex;
+                            } else {
+                                throw new Error(signResponse.error || `PSBT signing failed (${walletType}).`);
+                            }
+                        },
+                        pushTx: async (signedTxHex) => {
+                            const pushResponse = await window.satsconnect.request('wallet_pushTx', {
+                                txHex: signedTxHex,
+                                network: CONTRACT_CONFIG.network
+                            });
+                            if (pushResponse.status === 'success') {
+                                return pushResponse.result.txId;
+                            } else {
+                                throw new Error(pushResponse.error || `Transaction push failed (${walletType}).`);
+                            }
+                        }
+                    };
+                    
+                    walletConnected = true;
+                    console.log(`Recovered ${walletType} wallet connection via satsconnect`);
+                    recovered = true;
+                }
+            } catch (error) {
+                console.error("Failed to recover wallet connection via satsconnect:", error);
+            }
+        }
+        
+        if (!recovered) {
+            showModal("Wallet Required", "<p>Please connect your wallet first.</p>");
+            console.warn("Sign attempt failed: Wallet not connected and recovery failed.");
+            return;
+        }
     }
 
     // In a real application, you would use the connected wallet's API
