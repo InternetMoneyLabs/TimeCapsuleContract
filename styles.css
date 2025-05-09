@@ -59,7 +59,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden; /* Prevent horizontal scroll on body */
+  overflow-x: hidden; 
   width: 100%;
 }
 img { max-width: 100%; height: auto; vertical-align: middle; }
@@ -78,7 +78,7 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
 
 .banner {
   background-color: var(--color-warning);
-  color: var(--color-text-primary); /* Dark text on yellow for readability */
+  color: var(--color-text-primary); 
   text-align: center;
   padding: var(--space-sm);
   font-weight: 500;
@@ -95,11 +95,11 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
   padding: var(--space-md) 0;
   border-bottom: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
-  position: sticky; /* Keep header visible */
+  position: sticky; 
   top: 0;
-  z-index: 1020; /* Bootstrap's navbar z-index */
+  z-index: 1020; 
 }
-.header-spacer { height: 0; /* No longer needed if header is static or handled by sticky behavior */ }
+.header-spacer { height: 0; }
 
 .site-main { flex: 1; padding: var(--space-lg) 0; }
 .content-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-lg); }
@@ -117,7 +117,7 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
 
 .header-wrapper { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-md); }
 .site-title { font-size: var(--font-size-xl); color: var(--color-primary-dark); font-weight: 600;}
-.wallet-controls { display: flex; align-items: center; gap: var(--space-md); margin-left: auto; }
+.wallet-controls { display: flex; align-items: center; gap: var(--space-sm); margin-left: auto; } /* Reduced gap */
 .wallet-status { font-size: var(--font-size-sm); color: var(--color-text-secondary); white-space: nowrap; }
 
 
@@ -130,7 +130,7 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--color-border);
   transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
-  overflow: hidden; /* Ensure no internal content breaks card boundaries */
+  overflow: hidden; 
 }
 .card:hover {
   box-shadow: var(--shadow-md);
@@ -146,11 +146,11 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
   font-weight: 500;
 }
 .card-subtitle {
-  font-size: var(--font-size-md); /* Adjusted */
-  margin: var(--space-md) 0 var(--space-sm); /* Adjusted */
+  font-size: var(--font-size-md); 
+  margin: var(--space-md) 0 var(--space-sm); 
   color: var(--color-text-primary);
-  font-weight: 500; /* Bootstrap-like subtitle */
-  padding-left: 0; /* Removed border-left style for cleaner look */
+  font-weight: 500; 
+  padding-left: 0; 
   border-left: none;
 }
 .card-text { margin-bottom: var(--space-md); color: var(--color-text-secondary); }
@@ -216,11 +216,11 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
 .char-counter { text-align: right; font-size: var(--font-size-xs); color: var(--color-text-secondary); margin-bottom: var(--space-md); }
 
 .btn {
-  display: inline-block; padding: 0.5rem 1rem; /* Adjusted padding */
+  display: inline-block; padding: 0.5rem 1rem; 
   border: 1px solid transparent; border-radius: var(--border-radius-md);
   font-size: var(--font-size-md); font-weight: 400; text-align: center;
   cursor: pointer; transition: all var(--transition-fast);
-  user-select: none; /* Prevent text selection on buttons */
+  user-select: none; 
 }
 .btn:hover:not(:disabled) { filter: brightness(90%); }
 .btn:active:not(:disabled) { filter: brightness(80%); transform: translateY(1px); }
@@ -229,7 +229,7 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
 .btn-primary { background-color: var(--color-primary); color: white; border-color: var(--color-primary); }
 .btn-primary:hover:not(:disabled) { background-color: var(--color-primary-dark); border-color: var(--color-primary-dark); }
 .btn-secondary { background-color: var(--color-text-secondary); color: white; border-color: var(--color-text-secondary); }
-.btn-secondary:hover:not(:disabled) { background-color: #5a6268; border-color: #545b62; }
+.btn-secondary:hover:not(:disabled) { background-color: #5a6268; border-color: #545b62; } /* Darken Bootstrap secondary */
 .btn-full { width: 100%; padding: 0.75rem 1rem; font-weight: 500; margin-top: var(--space-sm); }
 .btn-sm { padding: 0.25rem 0.5rem; font-size: var(--font-size-sm); }
 
@@ -237,12 +237,12 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
 .tab-btn {
   background: none; border: none; padding: var(--space-sm) var(--space-md);
   color: var(--color-text-secondary); cursor: pointer; font-size: var(--font-size-md);
-  border-bottom: 3px solid transparent; margin-bottom: -1px; /* Overlap with container border */
+  border-bottom: 3px solid transparent; margin-bottom: -1px; 
   transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 .tab-btn:hover { color: var(--color-text-primary); }
 .tab-btn.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: 500; }
-.tab-content { display: none; }
+.tab-content { display: none; } /* Handled by JS or .active class */
 .tab-content.active { display: block; animation: fadeIn 0.3s; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -317,7 +317,7 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
 .modal-overlay {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(0,0,0,0.5); display: flex;
-  justify-content: center; align-items: center; z-index: 1050; /* Bootstrap modal z-index */
+  justify-content: center; align-items: center; z-index: 1050; 
   opacity: 0; visibility: hidden; transition: opacity var(--transition-normal);
 }
 .modal-overlay.active { opacity: 1; visibility: visible; }
@@ -326,7 +326,7 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
   box-shadow: var(--shadow-lg); width: 90%; max-width: 500px;
   max-height: 90vh; display: flex; flex-direction: column;
   transform: translateY(-20px); transition: transform var(--transition-normal);
-  opacity: 0; border: 1px solid rgba(0,0,0,.2); /* Bootstrap modal border */
+  opacity: 0; border: 1px solid rgba(0,0,0,.2); 
 }
 .modal-overlay.active .modal { transform: translateY(0); opacity: 1; }
 .modal-header {
@@ -371,11 +371,24 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
 
 .twitter-carousel { margin: var(--space-lg) 0; position: relative; width: 100%; }
 .carousel-container { position: relative; overflow: hidden; border-radius: var(--border-radius-md); box-shadow: var(--shadow-sm); background-color: var(--color-surface); border: 1px solid var(--color-border); }
-.carousel-slides { display: flex; transition: transform 0.5s ease-in-out; width: 100%; }
-.carousel-slide { min-width: 100%; width: 100%; flex-shrink: 0; display: none; /* Managed by JS */ flex-direction: column; padding: var(--space-lg); box-sizing: border-box; }
-.carousel-slide.active { display: flex; }
+.carousel-slides { display: flex; transition: transform 0.5s ease-in-out; width: 100%; } /* Ensure slides don't wrap */
+.carousel-slide { 
+    min-width: 100%; 
+    width: 100%; 
+    flex-shrink: 0; 
+    display: none; /* Initial state, JS will manage active slide */
+    flex-direction: column; 
+    padding: var(--space-lg); 
+    box-sizing: border-box; 
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out; /* For fading effect if desired */
+}
+.carousel-slide.active { 
+    display: flex; /* Show active slide */
+    opacity: 1;
+}
 .carousel-slide-content { display: flex; flex-direction: column; height: 100%; width: 100%; }
-.carousel-slide-image { width: 100%; height: auto; max-height: 250px; /* Adjusted */ border-radius: var(--border-radius-sm); margin: 0 auto var(--space-md); object-fit: contain; display: block; }
+.carousel-slide-image { width: 100%; height: auto; max-height: 250px; border-radius: var(--border-radius-sm); margin: 0 auto var(--space-md); object-fit: contain; display: block; }
 .carousel-slide-text { font-size: var(--font-size-md); margin-bottom: var(--space-md); flex-grow: 1; line-height: 1.5; color: var(--color-text-primary); }
 .carousel-slide-actions { display: flex; justify-content: center; align-items: center; margin-top: auto; }
 
@@ -394,8 +407,8 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
 
 .carousel-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
-  background-color: rgba(33,37,41,0.7); /* Darker, semi-transparent */
-  color: white; border: none; width: 36px; height: 36px; /* Slightly smaller */
+  background-color: rgba(33,37,41,0.7); 
+  color: white; border: none; width: 36px; height: 36px; 
   border-radius: 50%; font-size: 1.25rem; display: flex; align-items: center; justify-content: center;
   cursor: pointer; z-index: 10; transition: background-color var(--transition-fast);
 }
@@ -416,18 +429,19 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
 .mt-md { margin-top: var(--space-md) !important; }
 
 /* Responsive Adjustments */
-@media (min-width: 768px) {
-  .content-grid { grid-template-columns: 2fr 3fr; gap: var(--space-xl); } /* Adjust column ratio */
+@media (min-width: 992px) { /* Larger breakpoint for 2-column layout */
+  .content-grid { grid-template-columns: 1fr 1.5fr; gap: var(--space-xl); } 
 }
 
+
 @media (max-width: 767px) {
-  .site-header { position: static; } /* Simpler header on mobile */
+  .site-header { position: static; } 
   .header-wrapper { flex-direction: column; text-align: center; }
   .wallet-controls { flex-direction: column; width: 100%; gap: var(--space-sm); margin-left: 0; }
   .wallet-status { font-size: var(--font-size-md); }
   .countdown-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
   .search-form { flex-direction: column; }
-  .wallet-grid { grid-template-columns: 1fr; } /* Single column for wallet options on mobile */
+  .wallet-grid { grid-template-columns: 1fr; } 
   .fee-grid { grid-template-columns: repeat(2, 1fr); }
   .content-grid { grid-template-columns: 1fr; gap: var(--space-md); }
   .container { padding-left: var(--space-sm); padding-right: var(--space-sm); }
@@ -454,18 +468,18 @@ a:hover { color: var(--color-primary-dark); text-decoration: underline; }
   .countdown-value { font-size: var(--font-size-md); }
   .modal-body, .modal-header, .modal-footer { padding: var(--space-sm); }
   .modal-title { font-size: var(--font-size-md); }
+  .wallet-controls { gap: 0.3rem; } /* Tighter spacing for wallet buttons on very small screens */
+  .wallet-controls .btn { font-size: var(--font-size-sm); padding: 0.4rem 0.8rem; }
 }
 
-/* Terms and Privacy Policy Styling in Modal */
 .tcpp-content { max-height: 60vh; overflow-y: auto; padding-right: 10px; text-align: left; }
 .tcpp-content h3 { color: var(--color-primary-dark); margin-top: var(--space-lg); margin-bottom: var(--space-sm); font-size: var(--font-size-lg); }
 .tcpp-content h4 { color: var(--color-text-primary); margin-top: var(--space-md); margin-bottom: var(--space-xs); font-size: var(--font-size-md); font-weight: 500; }
 .tcpp-content p, .tcpp-content li { margin-bottom: var(--space-sm); line-height: 1.5; font-size: var(--font-size-sm); }
 .tcpp-content ul { margin-left: var(--space-md); margin-bottom: var(--space-md); }
 
-/* Ensure banner text doesn't overflow too badly */
 .banner-link {
-  display: inline-block; /* Allows max-width to work better with word-break */
-  max-width: 90%; /* Adjust as needed */
-  vertical-align: middle; /* Align better with surrounding text */
+  display: inline-block; 
+  max-width: 90%; 
+  vertical-align: middle; 
 }
