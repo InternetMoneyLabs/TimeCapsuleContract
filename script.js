@@ -1,30 +1,23 @@
-// Configuration (adjust as needed)
 const CONTRACT_CONFIG = {
-    feeRecipient: 'bc1qyetzzylgkyq6rcqx4uu9jyrhzs0ume44t9rfrw', // Replace with actual recipient
-    feeAmount: 0.0001, // Storage Fee in Signet BTC
-    unlockBlockHeight: 263527, // Target unlock block height
-    network: 'signet', // Target network
-    inscriptionPostage: 10000 // Example postage for inscription
+    feeRecipient: 'bc1qyetzzylgkyq6rcqx4uu9jyrhzs0ume44t9rfrw',
+    feeAmount: 0.0001,
+    unlockBlockHeight: 263527,
+    network: 'signet',
+    inscriptionPostage: 10000 
 };
 
-// Global state
 let walletConnected = false;
-let currentWallet = null; // Stores the connected wallet provider object
+let currentWallet = null;
 let userAddress = null;
 let userPublicKey = null;
-let currentNetwork = { network: 'unknown' }; // Store current network info
+let currentNetwork = { network: 'unknown' };
 let networkStatusInterval = null;
 let countdownInterval = null;
 let carouselAutoSlideInterval = null;
 
-
-// Utility function to show modals
 function showModal(title, bodyHtml, isWalletModal = false) {
     const modalOverlay = isWalletModal ? document.getElementById('walletSelectionModal') : document.getElementById('modalOverlay');
-    if (!modalOverlay) {
-        console.error("Modal overlay element not found:", isWalletModal ? '#walletSelectionModal' : '#modalOverlay');
-        return;
-    }
+    if (!modalOverlay) return;
 
     const modalTitle = modalOverlay.querySelector('.modal-title');
     const modalBody = modalOverlay.querySelector('.modal-body');
@@ -32,9 +25,7 @@ function showModal(title, bodyHtml, isWalletModal = false) {
     const modalOk = modalOverlay.querySelector('.modal-footer .btn-primary');
 
     if (modalTitle) modalTitle.textContent = title;
-    if (modalBody && !isWalletModal && bodyHtml !== undefined) {
-        modalBody.innerHTML = bodyHtml;
-    }
+    if (modalBody && !isWalletModal && bodyHtml !== undefined) modalBody.innerHTML = bodyHtml;
 
     modalOverlay.classList.add('active');
 
@@ -48,28 +39,14 @@ function showModal(title, bodyHtml, isWalletModal = false) {
     };
 
     if (modalClose) {
-        const oldCloseHandler = modalClose._closeHandler;
-        if (oldCloseHandler) modalClose.removeEventListener('click', oldCloseHandler);
-        const newCloseHandler = closeModal;
-        modalClose.addEventListener('click', newCloseHandler);
-        modalClose._closeHandler = newCloseHandler;
+        modalClose.onclick = closeModal;
     }
-
     if (modalOk && !isWalletModal) {
-        const oldOkHandler = modalOk._okHandler;
-        if (oldOkHandler) modalOk.removeEventListener('click', oldOkHandler);
-        const newOkHandler = closeModal;
-        modalOk.addEventListener('click', newOkHandler);
-        modalOk._okHandler = newOkHandler;
+        modalOk.onclick = closeModal;
     }
-
-    const oldOverlayClickHandler = modalOverlay._overlayClickHandler;
-    if (oldOverlayClickHandler) modalOverlay.removeEventListener('click', oldOverlayClickHandler);
-    const newOverlayClickHandler = (e) => {
+    modalOverlay.onclick = (e) => {
         if (e.target === modalOverlay) closeModal();
     };
-    modalOverlay.addEventListener('click', newOverlayClickHandler);
-    modalOverlay._overlayClickHandler = newOverlayClickHandler;
 
     setTimeout(() => {
         const modalElement = modalOverlay.querySelector('.modal');
@@ -78,10 +55,8 @@ function showModal(title, bodyHtml, isWalletModal = false) {
             modalElement.style.transform = 'translateY(0)';
         }
     }, 10);
-    // console.log(`Modal shown: ${title}`); // Can be noisy
 }
 
-// Utility function to hide modals
 function hideModal(isWalletModal = false) {
     const modalOverlay = isWalletModal ? document.getElementById('walletSelectionModal') : document.getElementById('modalOverlay');
     if (modalOverlay) {
@@ -92,260 +67,232 @@ function hideModal(isWalletModal = false) {
         }
         setTimeout(() => {
             modalOverlay.classList.remove('active');
-            // console.log(`Modal hidden: ${isWalletModal ? 'Wallet' : 'Regular'}`); // Can be noisy
         }, 300);
-    } else {
-        console.error("Modal overlay element not found for hiding:", isWalletModal ? '#walletSelectionModal' : '#modalOverlay');
+    }
+}
+
+function shortenAddress(address, chars = 6) {
+    if (!address) return '';
+    return `${address.substring(0, chars)}...${address.substring(address.length - chars)}`;
+}
+
+async function fetchSignetBalance(address) {
+    if (!address) return 'N/A';
+    try {
+        const response = await fetch(`https://mempool.space/signet/api/address/${address}`);
+        if (!response.ok) {
+            console.warn(`Mempool API error for ${address}: ${response.status}`);
+            return 'Error';
+        }
+        const data = await response.json();
+        const balanceSat = (data.chain_stats.funded_txo_sum - data.chain_stats.spent_txo_sum) + 
+                           (data.mempool_stats.funded_txo_sum - data.mempool_stats.spent_txo_sum);
+        return `${(balanceSat / 100000000).toFixed(4)} Signet BTC`;
+    } catch (error) {
+        console.error(`Failed to fetch balance for ${address} from mempool.space:`, error);
+        return 'N/A (API)';
     }
 }
 
 
-// Wallet Connection Logic
-async function initWalletConnection() {
-    console.log("Initializing wallet connection.");
+function updateWalletDisplay(walletName, address, network, balanceStr = 'Loading...') {
+    const walletStatusEl = document.getElementById('walletStatus');
+    const walletInfoEl = document.getElementById('walletInfo');
+    const walletAddressEl = document.getElementById('walletAddress');
+    const walletBalanceEl = document.getElementById('walletBalance');
     const connectWalletButton = document.getElementById('connectWallet');
     const disconnectWalletButton = document.getElementById('disconnectWallet');
-    const walletStatus = document.getElementById('walletStatus');
-    const walletSelectionModal = document.getElementById('walletSelectionModal');
-    const encryptMessageBtn = document.getElementById('encryptMessageBtn');
 
-    if (!connectWalletButton || !disconnectWalletButton || !walletStatus || !walletSelectionModal || !encryptMessageBtn) {
-        console.error("Critical wallet UI elements not found.");
-        return;
+    if (walletConnected) {
+        walletStatusEl.style.display = 'none';
+        walletInfoEl.style.display = 'flex';
+        walletAddressEl.textContent = `${walletName}: ${shortenAddress(address)}`;
+        walletBalanceEl.textContent = `Balance: ${balanceStr}`;
+        connectWalletButton.style.display = 'none';
+        disconnectWalletButton.style.display = 'inline-block';
+    } else {
+        walletStatusEl.style.display = 'block';
+        walletStatusEl.textContent = 'Wallet Status: Not Connected';
+        walletInfoEl.style.display = 'none';
+        connectWalletButton.style.display = 'inline-block';
+        disconnectWalletButton.style.display = 'none';
     }
+}
 
+
+async function initWalletConnection() {
+    const connectWalletButton = document.getElementById('connectWallet');
+    const disconnectWalletButton = document.getElementById('disconnectWallet');
+    
     await checkWalletsAvailability(); 
 
     connectWalletButton.onclick = () => {
-        console.log("Connect Wallet button clicked.");
-        showModal('Select your Bitcoin wallet', '', true);
+        showModal('Select Bitcoin Wallet', '', true);
         const modalElement = document.getElementById('walletSelectionModal');
         if (modalElement) {
             const walletOptions = modalElement.querySelectorAll('.wallet-option');
             walletOptions.forEach(button => {
-                const oldClickHandler = button._clickHandler;
-                if (oldClickHandler) button.removeEventListener('click', oldClickHandler);
-
-                const newClickHandler = async () => {
+                button.onclick = async () => {
                     const walletType = button.getAttribute('data-wallet');
                     if (button.classList.contains('unavailable')) {
                         hideModal(true);
-                        showModal("Wallet Not Found", `<p>The ${walletType} wallet was not detected. Please install it and refresh the page.</p>`);
+                        showModal("Wallet Not Found", `<p>The ${walletType} wallet was not detected. Please install it and refresh.</p>`);
                         return;
                     }
                     hideModal(true);
                     try {
                         await connectToWallet(walletType);
-                        updateEncryptButtonState(); 
                     } catch (error) {
                         console.error(`Failed to connect to ${walletType}:`, error);
-                        walletStatus.textContent = `Connection Failed: ${error.message || 'Unknown error'}`;
+                        updateWalletDisplay(null, null, null, null); 
                         walletConnected = false;
-                        userAddress = null;
-                        userPublicKey = null;
                         currentWallet = null;
-                        currentNetwork = { network: 'unknown' };
-                        connectWalletButton.style.display = 'inline-block';
-                        disconnectWalletButton.style.display = 'none';
-                        updateEncryptButtonState();
-                        showModal("Connection Error", `<p>Failed to connect to ${walletType}. Ensure the wallet is installed, unlocked, and try again.</p><p>Details: ${error.message || 'Unknown error'}</p>`);
+                        showModal("Connection Error", `<p>Failed to connect to ${walletType}.</p><p>Details: ${error.message || 'Ensure wallet is installed, unlocked, and try again.'}</p>`);
                     }
+                    updateEncryptButtonState();
                 };
-                button.addEventListener('click', newClickHandler);
-                button._clickHandler = newClickHandler;
             });
         }
     };
 
     disconnectWalletButton.onclick = async () => {
         const providerName = currentWallet?._brand?.name || "Wallet";
-        console.log(`Disconnecting from ${providerName}.`);
-        // Some wallets (like SatsConnect) might have a specific disconnect method
         if (currentWallet && typeof currentWallet.disconnect === 'function') {
-            try {
-                await currentWallet.disconnect();
-            } catch (e) {
-                console.warn(`Error calling ${providerName}.disconnect(): ${e.message}`);
-            }
+            try { await currentWallet.disconnect(); } catch (e) { console.warn(`Error on ${providerName}.disconnect(): ${e.message}`); }
         }
         handleDisconnect(providerName);
     };
 
-
-    const handleDisconnect = (providerName = "Wallet") => {
-        console.log(`${providerName} disconnected or session ended.`);
-        walletConnected = false;
-        userAddress = null;
-        userPublicKey = null;
-        currentWallet = null;
-        currentNetwork = { network: 'unknown' };
-        walletStatus.textContent = 'Wallet Status: Disconnected';
-        connectWalletButton.style.display = 'inline-block';
-        disconnectWalletButton.style.display = 'none';
-        updateEncryptButtonState();
-        clearInterval(networkStatusInterval);
-        networkStatusInterval = null;
-        // showModal("Wallet Disconnected", "<p>Your wallet has been disconnected.</p>"); // Optional: can be intrusive
-    };
-
-    const handleAccountsChanged = async (accounts, providerName = "Wallet") => {
-        console.log(`${providerName} accounts changed:`, accounts);
-        if (!accounts || accounts.length === 0) {
-            handleDisconnect(providerName);
-            return;
-        }
-        userAddress = accounts[0].address || accounts[0]; 
-        
-        if (currentWallet && currentWallet.getNetwork) {
-            try {
-                currentNetwork = await currentWallet.getNetwork();
-                if (!currentNetwork || !currentNetwork.network) { 
-                    currentNetwork = { network: CONTRACT_CONFIG.network }; 
-                }
-            } catch (e) {
-                console.warn(`Error getting network from ${providerName} after accountsChanged:`, e);
-                currentNetwork = { network: CONTRACT_CONFIG.network }; 
-            }
-        } else {
-            console.warn(`${providerName} does not have a getNetwork method. Network state might be stale.`);
-        }
-        
-        const walletTypeName = currentWallet?._brand?.name || providerName;
-        walletStatus.textContent = `Connected (${walletTypeName}): ${currentNetwork.network ? currentNetwork.network.toUpperCase() : 'SIGNET'}`;
-        walletConnected = true; 
-        connectWalletButton.style.display = 'none';
-        disconnectWalletButton.style.display = 'inline-block';
-        updateEncryptButtonState();
-        console.log(`Active account: ${userAddress}, Network: ${currentNetwork.network}`);
-    };
-
-    const handleNetworkChanged = async (networkInfo, providerName = "Wallet") => {
-        console.log(`${providerName} network changed:`, networkInfo);
-        if (typeof networkInfo === 'string') {
-            currentNetwork = { network: networkInfo.toLowerCase() };
-        } else if (networkInfo && networkInfo.network) {
-            currentNetwork = networkInfo;
-        } else if (currentWallet && currentWallet.getNetwork) { 
-            try {
-                currentNetwork = await currentWallet.getNetwork();
-                 if (!currentNetwork || !currentNetwork.network) { 
-                    currentNetwork = { network: CONTRACT_CONFIG.network }; 
-                }
-            } catch (e) {
-                 console.warn(`Error getting network from ${providerName} after networkChanged:`, e);
-                 currentNetwork = { network: CONTRACT_CONFIG.network }; 
-            }
-        } else {
-            currentNetwork = { network: CONTRACT_CONFIG.network }; 
-        }
-
-        const walletTypeName = currentWallet?._brand?.name || providerName;
-        walletStatus.textContent = `Connected (${walletTypeName}): ${currentNetwork.network ? currentNetwork.network.toUpperCase() : 'SIGNET'}`;
-        
-        if (currentNetwork.network !== CONTRACT_CONFIG.network) {
-            await promptNetworkSwitch(walletTypeName); // Await the prompt
-        }
-        updateEncryptButtonState();
-    };
-    
-    if (window.unisat && window.unisat.on) {
-        console.log("Attaching Unisat listeners.");
-        window.unisat.on('accountsChanged', (accounts) => handleAccountsChanged(accounts, "Unisat"));
-        window.unisat.on('networkChanged', (network) => handleNetworkChanged(network, "Unisat"));
-    }
-
-    if (typeof window.okxwallet?.bitcoin?.on === 'function') {
-        console.log("Attaching OKX Wallet listeners.");
-        window.okxwallet.bitcoin.on('accountsChanged', (result) => { // OKX might pass {address, publicKey} or array of strings
-            const accounts = Array.isArray(result) ? result : (result && result.address ? [result.address] : []);
-            handleAccountsChanged(accounts, "OKX")
-        });
-        window.okxwallet.bitcoin.on('networkChanged', (network) => handleNetworkChanged(network, "OKX"));
-    }
-    
     await checkInitialConnection();
-
     const tcppLinkInWalletModal = document.getElementById('tcppLink');
     if (tcppLinkInWalletModal) {
-        tcppLinkInWalletModal.addEventListener('click', (e) => {
-            e.preventDefault();
-            hideModal(true);
-            showModal("Terms and Privacy Policy", `
-                <div class="tcpp-content" style="text-align: left; max-height: 70vh; overflow-y: auto;">
-                    <h3>Terms of Service</h3><p>Last Updated: May 9, 2025</p>
-                    <h4>1. Acceptance of Terms</h4><p>By using the Bitcoin Time Capsule ("Service"), you agree to these Terms. If you disagree, do not use the Service.</p>
-                    <h4>2. Service Description</h4><p>This is an experimental Signet testnet application for time-locked messages. For testing only.</p>
-                    <h4>3. Risks</h4><p>The Service is experimental and may have bugs or errors. Use at your own risk. No warranties provided.</p>
-                    <h4>4. Fees & Transactions</h4><p>Blockchain transactions are irreversible. Fees apply as displayed. Signet BTC has no real value.</p>
-                    <h4>5. Limitation of Liability</h4><p>We are not liable for any damages arising from your use of the Service.</p>
-                    <h3>Privacy Policy</h3><p>Last Updated: May 9, 2025</p>
-                    <h4>1. Information</h4><p>We may log public blockchain data (addresses, transaction IDs) for operational purposes. No private keys are stored or requested beyond wallet interactions.</p>
-                    <h4>2. Data Use</h4><p>Data is used to operate and improve the Service. Blockchain data is public.</p>
-                    <h4>3. Third Parties</h4><p>Interactions with wallet providers are subject to their terms and policies.</p>
-                </div>
-            `);
-        });
+        tcppLinkInWalletModal.onclick = (e) => {
+            e.preventDefault(); hideModal(true);
+            showModal("Terms & Privacy Policy", `<div class="tcpp-content"><h3>Terms of Service</h3><p>Last Updated: May 10, 2025</p><h4>1. Acceptance</h4><p>Use of Bitcoin Time Capsule ("Service") means you accept these Terms.</p><h4>2. Experimental Use</h4><p>This is a Signet testnet demo. Use for testing only. No real value involved.</p><h4>3. Risks</h4><p>Service is experimental, use at your own risk. No warranties.</p><h3>Privacy Policy</h3><p>Last Updated: May 10, 2025</p><h4>1. Data</h4><p>Public blockchain data (addresses, TXIDs) may be logged. No private keys handled.</p><h4>2. Third Parties</h4><p>Wallet interactions are subject to provider T&Cs.</p></div>`);
+        };
     }
 }
 
+const handleDisconnect = (providerName = "Wallet") => {
+    walletConnected = false;
+    userAddress = null;
+    userPublicKey = null;
+    currentWallet = null;
+    currentNetwork = { network: 'unknown' };
+    updateWalletDisplay();
+    updateEncryptButtonState();
+    if(networkStatusInterval) clearInterval(networkStatusInterval);
+    networkStatusInterval = null;
+};
+
+const handleAccountsChanged = async (accounts, providerName = "Wallet") => {
+    if (!accounts || accounts.length === 0) {
+        handleDisconnect(providerName);
+        return;
+    }
+    userAddress = accounts[0].address || accounts[0]; 
+    
+    let balanceStr = 'Loading...';
+    if (currentWallet && currentWallet.getBalance) {
+        try {
+            const balanceData = await currentWallet.getBalance();
+            balanceStr = formatBalance(balanceData, providerName);
+        } catch (e) { balanceStr = 'N/A'; }
+    } else if (userAddress && (providerName.includes("Xverse") || providerName.includes("Leather"))) {
+        balanceStr = await fetchSignetBalance(userAddress);
+    }
+
+    if (currentWallet && currentWallet.getNetwork) {
+        try {
+            currentNetwork = await currentWallet.getNetwork();
+            if (!currentNetwork || !currentNetwork.network || typeof currentNetwork.network !== 'string') { 
+                currentNetwork = { network: CONTRACT_CONFIG.network }; 
+            }
+        } catch (e) { currentNetwork = { network: CONTRACT_CONFIG.network }; }
+    }
+    
+    updateWalletDisplay(currentWallet?._brand?.name || providerName, userAddress, currentNetwork.network, balanceStr);
+    walletConnected = true; 
+    updateEncryptButtonState();
+};
+
+const handleNetworkChanged = async (networkInfo, providerName = "Wallet") => {
+    if (typeof networkInfo === 'string') {
+        currentNetwork = { network: networkInfo.toLowerCase() };
+    } else if (networkInfo && typeof networkInfo.network === 'string') {
+        currentNetwork = { network: networkInfo.network.toLowerCase() };
+    } else if (currentWallet && currentWallet.getNetwork) { 
+        try {
+            currentNetwork = await currentWallet.getNetwork();
+             if (!currentNetwork || !currentNetwork.network || typeof currentNetwork.network !== 'string') { 
+                currentNetwork = { network: CONTRACT_CONFIG.network }; 
+            }
+        } catch (e) { currentNetwork = { network: CONTRACT_CONFIG.network };  }
+    } else { currentNetwork = { network: CONTRACT_CONFIG.network }; }
+
+    const balanceStr = document.getElementById('walletBalance')?.textContent.replace('Balance: ','') || 'Loading...';
+    updateWalletDisplay(currentWallet?._brand?.name || providerName, userAddress, currentNetwork.network, balanceStr);
+    
+    if (currentNetwork.network !== CONTRACT_CONFIG.network) {
+        await promptNetworkSwitch(currentWallet?._brand?.name || providerName);
+    }
+    updateEncryptButtonState();
+};
+
+function formatBalance(balanceData, walletName) {
+    if (balanceData === null || balanceData === undefined) return 'N/A';
+    let sats;
+    if (typeof balanceData === 'number') { 
+        sats = balanceData;
+    } else if (typeof balanceData.total === 'number') { 
+        sats = balanceData.total;
+    } else if (walletName === "OKX" && typeof balanceData.satoshi === 'number') {
+        sats = balanceData.satoshi;
+    } else {
+        return 'N/A (Format)';
+    }
+    return `${(sats / 100000000).toFixed(4)} Signet BTC`;
+}
+    
 async function checkInitialConnection() {
-    console.log("Checking for initial wallet connection.");
     try {
-        if (typeof window.unisat?.getAccounts === 'function') { // Unisat uses getAccounts
-            try {
-                const accounts = await window.unisat.getAccounts();
-                if (accounts && accounts.length > 0) {
-                    console.log("Initial connection found with Unisat.");
-                    userAddress = accounts[0];
-                    currentWallet = window.unisat; 
-                    currentWallet._brand = { name: "Unisat" }; // Ensure brand for consistency
-                    currentNetwork = await window.unisat.getNetwork();
-                    handleInitialWalletConnection('Unisat', currentNetwork);
-                    return;
-                }
-            } catch (e) { console.warn("Unisat not initially connected or error:", e.message); }
+        if (typeof window.unisat?.getAccounts === 'function') {
+            const accounts = await window.unisat.getAccounts();
+            if (accounts && accounts.length > 0) {
+                userAddress = accounts[0];
+                currentWallet = window.unisat; 
+                currentWallet._brand = { name: "Unisat" };
+                currentNetwork = await window.unisat.getNetwork();
+                if (!currentNetwork || typeof currentNetwork.network !== 'string') currentNetwork = {network: CONTRACT_CONFIG.network};
+                const balanceData = await currentWallet.getBalance();
+                handleInitialWalletConnection('Unisat', currentNetwork, formatBalance(balanceData, "Unisat"));
+                return;
+            }
         }
 
         if (typeof window.okxwallet?.bitcoin?.selectedAccount === 'object' && window.okxwallet.bitcoin.selectedAccount?.address) {
-            try {
-                 const acc = window.okxwallet.bitcoin.selectedAccount;
-                 userAddress = acc.address;
-                 userPublicKey = acc.publicKey;
-                 currentWallet = window.okxwallet.bitcoin;
-                 currentWallet._brand = { name: "OKX" };
-                 currentNetwork = await window.okxwallet.bitcoin.getNetwork();
-                 if (!currentNetwork || !currentNetwork.network) currentNetwork = {network: CONTRACT_CONFIG.network};
-                 console.log("Initial connection found with OKX.");
-                 handleInitialWalletConnection('OKX', currentNetwork);
-                 return;
-            } catch (e) { console.warn("OKX not initially connected or error:", e.message); }
+             const acc = window.okxwallet.bitcoin.selectedAccount;
+             userAddress = acc.address;
+             userPublicKey = acc.publicKey;
+             currentWallet = window.okxwallet.bitcoin;
+             currentWallet._brand = { name: "OKX" };
+             currentNetwork = await window.okxwallet.bitcoin.getNetwork();
+             if (!currentNetwork || typeof currentNetwork.network !== 'string') currentNetwork = {network: CONTRACT_CONFIG.network};
+             const balanceData = await currentWallet.getBalance();
+             handleInitialWalletConnection('OKX', currentNetwork, formatBalance(balanceData, "OKX"));
+             return;
         }
-        
-        // SatsConnect: Generally requires user interaction for initial connect, so less likely for silent auto-connect.
-        // The user will click "Connect Wallet" for these.
-
-        console.log("No silent initial wallet connection found.");
-    } catch (error) {
-        console.warn("Error during initial wallet connection check:", error);
-    }
+    } catch (error) { console.warn("Error during initial wallet connection check:", error); }
 }
 
-function handleInitialWalletConnection(walletType, networkInfo) {
-    const walletStatus = document.getElementById('walletStatus');
-    const connectWalletButton = document.getElementById('connectWallet');
-    const disconnectWalletButton = document.getElementById('disconnectWallet');
-    
+function handleInitialWalletConnection(walletType, networkInfo, balanceStr) {
     walletConnected = true;
     currentNetwork = networkInfo;
-    if (!currentNetwork || !currentNetwork.network) { 
+    if (!currentNetwork || typeof currentNetwork.network !== 'string') { 
         currentNetwork = { network: CONTRACT_CONFIG.network };
     }
-
-    console.log(`Initial connection established with ${walletType}. Address: ${userAddress}, Network: ${currentNetwork.network}`);
     
-    walletStatus.textContent = `Connected (${walletType}): ${currentNetwork.network.toUpperCase()}`;
-    connectWalletButton.style.display = 'none';
-    disconnectWalletButton.style.display = 'inline-block';
+    updateWalletDisplay(walletType, userAddress, currentNetwork.network, balanceStr);
 
     if (currentNetwork.network !== CONTRACT_CONFIG.network) {
         promptNetworkSwitch(walletType);
@@ -355,822 +302,396 @@ function handleInitialWalletConnection(walletType, networkInfo) {
 }
 
 async function checkWalletsAvailability() {
-    console.log("Checking wallet availability.");
-    const walletOptions = document.querySelectorAll('#walletSelectionModal .wallet-option');
-    const walletAvailabilityMessage = document.getElementById('walletAvailabilityMessage');
-    const walletSelectInstruction = document.getElementById('walletSelectInstruction');
-
-    if (!walletOptions.length || !walletAvailabilityMessage || !walletSelectInstruction) {
-        console.error("Wallet availability UI elements missing.");
-        return;
-    }
-
     let walletsFound = 0;
-
-    const updateOption = (walletKey, isAvailable) => {
-        const option = document.querySelector(`.wallet-option[data-wallet="${walletKey}"]`);
-        if (option) {
-            if (isAvailable) {
-                option.classList.remove('unavailable');
-                option.classList.add('available');
-                walletsFound++;
-            } else {
-                option.classList.add('unavailable');
-                option.classList.remove('available');
-            }
-            option.style.display = 'flex'; 
-        }
+    const updateOption = (key, avail) => {
+        const opt = document.querySelector(`.wallet-option[data-wallet="${key}"]`);
+        if(opt) { opt.classList.toggle('unavailable', !avail); if(avail) walletsFound++; opt.style.display = 'flex'; }
     };
     
     await new Promise(r => setTimeout(r, 50)); 
     updateOption('unisat', typeof window.unisat?.requestAccounts === 'function');
     
     await new Promise(r => setTimeout(r, 50));
-    const xverseAvailable = typeof window.BitcoinProvider === 'object' || typeof window.satsConnect === 'object' || typeof window.satsconnect === 'object';
-    updateOption('xverse', xverseAvailable);
+    const scObj = window.satsConnect || window.satsconnect; // Handle casing
+    updateOption('xverse', typeof window.BitcoinProvider === 'object' || typeof scObj?.request === 'function');
 
     await new Promise(r => setTimeout(r, 50));
     updateOption('okx', typeof window.okxwallet?.bitcoin?.connect === 'function');
 
     await new Promise(r => setTimeout(r, 50));
-    const leatherAvailable = typeof window.Leather === 'object' || typeof window.StacksProvider === 'object' || typeof window.satsConnect === 'object' || typeof window.satsconnect === 'object';
-    updateOption('leather', leatherAvailable);
-
-    console.log(`Wallets found: ${walletsFound}`);
-    walletSelectInstruction.style.display = 'block';
-    walletAvailabilityMessage.style.display = walletsFound === 0 ? 'block' : 'none';
+    updateOption('leather', typeof window.LeatherProvider === 'function' || typeof window.Leather === 'object' || typeof scObj?.request === 'function');
+    
+    document.getElementById('walletSelectInstruction').style.display = 'block';
+    document.getElementById('walletAvailabilityMessage').style.display = walletsFound === 0 ? 'block' : 'none';
 }
 
 
 async function connectToWallet(walletType) {
-    const walletStatus = document.getElementById('walletStatus');
-    const connectWalletButton = document.getElementById('connectWallet');
-    const disconnectWalletButton = document.getElementById('disconnectWallet');
-    walletStatus.textContent = `Connecting to ${walletType}...`;
-    console.log(`Attempting connection to ${walletType}...`);
+    let accounts = [];
+    let providerName = walletType.charAt(0).toUpperCase() + walletType.slice(1); 
+    let balanceStr = 'Loading...';
+    currentNetwork = { network: 'unknown' }; 
 
-    try {
-        let accounts = [];
-        let providerName = walletType.charAt(0).toUpperCase() + walletType.slice(1); 
+    if (walletType === 'unisat' && typeof window.unisat !== 'undefined') {
+        accounts = await window.unisat.requestAccounts();
+        currentNetwork = await window.unisat.getNetwork();
+        currentWallet = window.unisat;
+        currentWallet._brand = { name: "Unisat" };
+        const balanceData = await currentWallet.getBalance();
+        balanceStr = formatBalance(balanceData, "Unisat");
+    } else if (walletType === 'okx' && typeof window.okxwallet?.bitcoin !== 'undefined') {
+        const result = await window.okxwallet.bitcoin.connect(); 
+        accounts = result.address ? [result.address] : (Array.isArray(result) ? result : []); 
+        userPublicKey = result.publicKey;
+        currentNetwork = await window.okxwallet.bitcoin.getNetwork();
+        currentWallet = window.okxwallet.bitcoin;
+        currentWallet._brand = { name: "OKX" };
+        const balanceData = await currentWallet.getBalance();
+        balanceStr = formatBalance(balanceData, "OKX");
+    } else if ((walletType === 'xverse' || walletType === 'leather')) {
+        const sc = window.satsConnect || window.satsconnect;
+        if (!sc || typeof sc.request !== 'function') throw new Error(`${providerName} (SatsConnect) provider not found.`);
+        
+        providerName = walletType === 'xverse' ? "Xverse" : "Leather"; 
 
-        currentNetwork = { network: 'unknown' }; 
+        const response = await sc.request('bitcoin_addresses', null); // New SatsConnect method
 
-        if (walletType === 'unisat' && typeof window.unisat !== 'undefined') {
-            accounts = await window.unisat.requestAccounts();
-            currentNetwork = await window.unisat.getNetwork();
-            currentWallet = window.unisat;
-            currentWallet._brand = { name: "Unisat" };
-        } else if (walletType === 'okx' && typeof window.okxwallet?.bitcoin !== 'undefined') {
-            const result = await window.okxwallet.bitcoin.connect(); 
-            accounts = result.address ? [result.address] : (Array.isArray(result) ? result : []); 
-            userPublicKey = result.publicKey;
-            currentNetwork = await window.okxwallet.bitcoin.getNetwork();
-            if (!currentNetwork || !currentNetwork.network) currentNetwork = {network: CONTRACT_CONFIG.network}; 
-            currentWallet = window.okxwallet.bitcoin;
-            currentWallet._brand = { name: "OKX" };
-        } else if ((walletType === 'xverse' || walletType === 'leather') && (typeof window.satsConnect === 'object' || typeof window.satsconnect === 'object')) {
-            const sc = window.satsConnect || window.satsconnect;
-            providerName = walletType === 'xverse' ? "Xverse" : "Leather"; // Simpler name for UI
+        if (response.status === 'success' && response.result.length > 0) {
+            const paymentAccount = response.result.find(acc => acc.purpose === 'payment');
+            const ordinalsAccount = response.result.find(acc => acc.purpose === 'ordinals');
 
-            const response = await sc.request('wallet_connect', { // Replaced wallet_connect with request
-                network: CONTRACT_CONFIG.network, 
-                addresses: [ // Replaced addresses with purpose
-                    { purpose: 'payment', networkType: CONTRACT_CONFIG.network }, 
-                    { purpose: 'ordinals', networkType: CONTRACT_CONFIG.network }
-                ]
-            });
+            if (!paymentAccount) throw new Error (`${providerName} did not return a payment address.`);
+            
+            accounts = [paymentAccount.address]; 
+            userPublicKey = paymentAccount.publicKey;
+            currentNetwork = { network: paymentAccount.network || CONTRACT_CONFIG.network }; // Prefer network from address if available
 
-            if (response.status === 'success' && response.result.addresses.length > 0) {
-                accounts = response.result.addresses.map(a => a.address); 
-                userPublicKey = response.result.addresses[0].publicKey; 
-                const paymentAddrInfo = response.result.addresses.find(a => a.purpose === 'payment');
-                currentNetwork = { network: paymentAddrInfo?.networkType || CONTRACT_CONFIG.network };
-                
-                currentWallet = {
-                    _brand: { name: providerName },
-                    requestAccounts: async () => accounts,
-                    getNetwork: async () => currentNetwork,
-                    signPsbt: async (psbtHex, options) => {
-                        const signResp = await sc.request('wallet_signPsbt', { psbtHex, network: currentNetwork.network, ...options });
-                        if (signResp.status === 'success') return signResp.result.psbtHex;
-                        throw new Error(signResp.error?.message || 'SatsConnect PSBT signing failed.');
-                    },
-                    pushTx: async (txHex) => {
-                        const pushResp = await sc.request('wallet_pushTx', { txHex, network: currentNetwork.network });
-                        if (pushResp.status === 'success') return pushResp.result.txId;
-                        throw new Error(pushResp.error?.message || 'SatsConnect transaction push failed.');
-                    },
-                    disconnect: async () => { // Add disconnect for SatsConnect if supported by it
-                        if (typeof sc.disconnect === 'function') {
-                            await sc.disconnect();
-                        }
-                    }
-                };
-            } else {
-                throw new Error(response.error?.message || `${providerName} connection failed.`);
-            }
+            balanceStr = await fetchSignetBalance(paymentAccount.address);
+            
+            currentWallet = {
+                _brand: { name: providerName },
+                _satsConnect: sc,
+                _paymentAddress: paymentAccount.address,
+                _ordinalsAddress: ordinalsAccount?.address || paymentAccount.address, // Fallback to payment for ordinals if not present
+                requestAccounts: async () => accounts, // Simplified
+                getNetwork: async () => currentNetwork,
+                getBalance: async () => fetchSignetBalance(paymentAccount.address), // Wrapper
+                signPsbt: async (psbtBase64, options) => { // SatsConnect now expects base64
+                    const signResp = await sc.request('sign_psbt', { psbt: psbtBase64, network: currentNetwork.network, addresses: [paymentAccount.address] });
+                    if (signResp.status === 'success') return signResp.result.psbt; // Returns base64
+                    throw new Error(signResp.error?.message || 'SatsConnect PSBT signing failed.');
+                },
+                pushTx: async (txHex) => { // pushTx typically wants hex
+                    // SatsConnect might not have a direct pushTx; this would be an external API call
+                    // For demo, we'll assume it has one or skip this part
+                    throw new Error("pushTx not directly supported by this SatsConnect shim, use external API.");
+                },
+                disconnect: async () => { if (typeof sc.disconnect === 'function') await sc.disconnect(); }
+            };
         } else {
-            throw new Error(`${providerName} provider not found or not supported.`);
+            throw new Error(response.error?.message || `${providerName} connection failed.`);
         }
+    } else {
+        throw new Error(`${providerName} provider not found or not supported.`);
+    }
 
-        if (!accounts || accounts.length === 0) throw new Error("No accounts found or permission denied.");
-        userAddress = accounts[0].address || accounts[0]; // Handle if accounts[0] is string or object
+    if (!accounts || accounts.length === 0) throw new Error("No accounts found or permission denied.");
+    userAddress = accounts[0].address || accounts[0]; 
+    if (!currentNetwork || typeof currentNetwork.network !== 'string') currentNetwork = {network: CONTRACT_CONFIG.network};
 
-        walletConnected = true;
-        walletStatus.textContent = `Connected (${currentWallet._brand?.name || providerName}): ${currentNetwork.network.toUpperCase()}`;
-        connectWalletButton.style.display = 'none';
-        disconnectWalletButton.style.display = 'inline-block';
-        
-        console.log(`${currentWallet._brand?.name || providerName} connected. Address: ${userAddress}, Network: ${currentNetwork.network}`);
-
-        if (currentNetwork.network !== CONTRACT_CONFIG.network) {
-            const switched = await promptNetworkSwitch(currentWallet._brand?.name || providerName);
-            if (switched && currentWallet && currentWallet.getNetwork) { 
-                currentNetwork = await currentWallet.getNetwork();
-                 if (!currentNetwork || !currentNetwork.network) currentNetwork = {network: CONTRACT_CONFIG.network};
-                walletStatus.textContent = `Connected (${currentWallet._brand?.name || providerName}): ${currentNetwork.network.toUpperCase()}`;
-            }
-            // updateEncryptButtonState will handle the "Wrong Network" display if still not correct.
+    walletConnected = true;
+    updateWalletDisplay(currentWallet._brand?.name || providerName, userAddress, currentNetwork.network, balanceStr);
+    
+    if (currentNetwork.network.toLowerCase() !== CONTRACT_CONFIG.network) {
+        const switched = await promptNetworkSwitch(currentWallet._brand?.name || providerName);
+        if (switched && currentWallet && currentWallet.getNetwork) { 
+            currentNetwork = await currentWallet.getNetwork();
+             if (!currentNetwork || typeof currentNetwork.network !== 'string') currentNetwork = {network: CONTRACT_CONFIG.network};
+            updateWalletDisplay(currentWallet._brand?.name || providerName, userAddress, currentNetwork.network, balanceStr);
         }
-        
-        updateEncryptButtonState();
-        startNetworkStatusMonitoring();
+    }
+    
+    updateEncryptButtonState();
+    startNetworkStatusMonitoring();
 
-    } catch (error) {
-        console.error(`Error connecting to ${walletType}:`, error);
-        walletStatus.textContent = `Connection Failed: ${error.message || 'Unknown error'}`;
-        walletConnected = false;
-        userAddress = null;
-        userPublicKey = null;
-        currentWallet = null;
-        currentNetwork = { network: 'unknown' };
-        connectWalletButton.style.display = 'inline-block';
-        disconnectWalletButton.style.display = 'none';
-        updateEncryptButtonState();
-        throw error; 
+    if (window.unisat && window.unisat.on && walletType === 'unisat') {
+        window.unisat.removeListener('accountsChanged', handleAccountsChanged);
+        window.unisat.removeListener('networkChanged', handleNetworkChanged);
+        window.unisat.on('accountsChanged', (accs) => handleAccountsChanged(accs, "Unisat"));
+        window.unisat.on('networkChanged', (net) => handleNetworkChanged(net, "Unisat"));
+    }
+    if (window.okxwallet?.bitcoin?.on && walletType === 'okx') {
+        window.okxwallet.bitcoin.removeListener('accountsChanged', handleAccountsChanged);
+        window.okxwallet.bitcoin.removeListener('networkChanged', handleNetworkChanged);
+        window.okxwallet.bitcoin.on('accountsChanged', (res) => { const accs = Array.isArray(res) ? res : (res && res.address ? [res.address] : []); handleAccountsChanged(accs, "OKX")});
+        window.okxwallet.bitcoin.on('networkChanged', (net) => handleNetworkChanged(net, "OKX"));
     }
 }
 
 async function promptNetworkSwitch(walletTypeName) {
-    console.log(`Prompting network switch for ${walletTypeName}. Required: ${CONTRACT_CONFIG.network}, Current: ${currentNetwork.network}`);
-    
+    if (currentNetwork.network.toLowerCase() === CONTRACT_CONFIG.network) return true;
+
     if (currentWallet && currentWallet.switchNetwork && typeof currentWallet.switchNetwork === 'function') {
         try {
-            // Unisat specific: it might throw if already on the network or if switch is unsupported for the target
-            if (walletTypeName === "Unisat" && currentNetwork.network === CONTRACT_CONFIG.network) {
-                 console.log("Unisat already on the correct network, switchNetwork call skipped.");
-                 return true; // Already on correct network
-            }
+            if (walletTypeName === "Unisat" && currentNetwork.network.toLowerCase() === CONTRACT_CONFIG.network) return true;
             await currentWallet.switchNetwork(CONTRACT_CONFIG.network);
-            // Re-verify network after switch
             const newNet = await currentWallet.getNetwork();
-            if (!newNet || !newNet.network) currentNetwork = {network: CONTRACT_CONFIG.network}; else currentNetwork = newNet;
+            currentNetwork = (!newNet || typeof newNet.network !== 'string') ? {network: CONTRACT_CONFIG.network} : {network: newNet.network.toLowerCase()};
             
             if (currentNetwork.network === CONTRACT_CONFIG.network) {
-                console.log("Network switched successfully via wallet API.");
-                document.getElementById('walletStatus').textContent = `Connected (${walletTypeName}): ${currentNetwork.network.toUpperCase()}`;
+                updateWalletDisplay(walletTypeName, userAddress, currentNetwork.network, document.getElementById('walletBalance')?.textContent.replace('Balance: ',''));
                 updateEncryptButtonState();
                 return true;
             }
-        } catch (switchError) {
-            console.warn(`Failed to switch network via ${walletTypeName} API:`, switchError.message);
-        }
+        } catch (switchError) { console.warn(`Wallet API switchNetwork for ${walletTypeName} failed:`, switchError.message); }
     }
 
     return new Promise((resolve) => {
-        const modalTitle = "Switch Network Required";
-        const modalBody = `
-            <p>Your ${walletTypeName} is on <strong>${currentNetwork.network ? currentNetwork.network.toUpperCase() : 'Unknown'}</strong>.</p>
-            <p>Please switch to <strong>Bitcoin ${CONTRACT_CONFIG.network.toUpperCase()}</strong> to use this application.</p>
-            <p>Typical Instructions:</p>
-            <ul>
-                <li><strong>Unisat:</strong> Network icon (top-right) → "Bitcoin Testnet, Signet".</li>
-                <li><strong>Xverse:</strong> Settings → Network → "Bitcoin Testnet (Signet)".</li>
-                <li><strong>OKX:</strong> Settings/Wallet → Network → "Bitcoin Testnet".</li>
-                <li><strong>Leather:</strong> Network selector → "Signet".</li>
-            </ul>
-            <p>Click "OK" after switching in your wallet. Functionality will be limited otherwise.</p>`;
-        
+        const modalTitle = "Incorrect Network";
+        const modalBody = `<p>Your ${walletTypeName} is on <strong>${currentNetwork.network.toUpperCase()}</strong>.</p><p>Please switch to <strong>${CONTRACT_CONFIG.network.toUpperCase()}</strong> to proceed.</p><p>Click "OK" after switching in your wallet.</p>`;
         showModal(modalTitle, modalBody, false); 
-
         const modalOkButton = document.querySelector('#modalOverlay .modal-footer .btn-primary');
         if (modalOkButton) {
-            const oldOkHandler = modalOkButton._okHandlerForSwitch;
-            if (oldOkHandler) modalOkButton.removeEventListener('click', oldOkHandler);
-
-            const newOkHandler = async () => {
+            modalOkButton.onclick = async () => {
                 hideModal();
                 if (currentWallet && currentWallet.getNetwork) {
                     try {
-                        currentNetwork = await currentWallet.getNetwork();
-                        if (!currentNetwork || !currentNetwork.network) currentNetwork = {network: CONTRACT_CONFIG.network};
+                        const newNet = await currentWallet.getNetwork();
+                        currentNetwork = (!newNet || typeof newNet.network !== 'string') ? {network: CONTRACT_CONFIG.network} : {network: newNet.network.toLowerCase()};
                     } catch (e) { console.warn("Error re-checking network:", e); }
                 }
-                document.getElementById('walletStatus').textContent = `Connected (${walletTypeName}): ${currentNetwork.network.toUpperCase()}`;
+                updateWalletDisplay(walletTypeName, userAddress, currentNetwork.network, document.getElementById('walletBalance')?.textContent.replace('Balance: ',''));
                 updateEncryptButtonState(); 
                 resolve(currentNetwork.network === CONTRACT_CONFIG.network);
             };
-            modalOkButton.addEventListener('click', newOkHandler);
-            modalOkButton._okHandlerForSwitch = newOkHandler;
-        } else {
-            resolve(false); // Should not happen if modal structure is correct
-        }
+        } else { resolve(false); }
     });
 }
 
 
 function startNetworkStatusMonitoring() {
-    console.log("Starting network status monitoring.");
     if (networkStatusInterval) clearInterval(networkStatusInterval);
-
     networkStatusInterval = setInterval(async () => {
         if (!walletConnected || !currentWallet) {
-            console.warn("Wallet no longer connected or provider lost. Stopping monitor.");
-            clearInterval(networkStatusInterval);
-            networkStatusInterval = null;
-            // UI should reflect disconnected state from handleDisconnect or initial check.
-            // No need to call handleDisconnect here again unless state is known to be bad.
-            return;
+            clearInterval(networkStatusInterval); networkStatusInterval = null; return;
         }
-
         try {
-            let newNetworkInfo = { network: currentNetwork.network }; // Assume same network initially
+            let newNetworkInfo = { network: currentNetwork.network };
             if (currentWallet.getNetwork) {
                  newNetworkInfo = await currentWallet.getNetwork();
-                 if (!newNetworkInfo || !newNetworkInfo.network) newNetworkInfo = {network: CONTRACT_CONFIG.network};
-            } else {
-                // console.warn("currentWallet.getNetwork is not a function. Network monitoring limited.");
+                 if (!newNetworkInfo || typeof newNetworkInfo.network !== 'string') newNetworkInfo = {network: CONTRACT_CONFIG.network};
+                 else newNetworkInfo.network = newNetworkInfo.network.toLowerCase();
             }
 
             if (newNetworkInfo.network !== currentNetwork.network) {
-                console.log(`Network change detected by monitor: ${currentNetwork.network} -> ${newNetworkInfo.network}`);
                 currentNetwork = newNetworkInfo;
-                const walletTypeName = currentWallet._brand?.name || "Wallet";
-                document.getElementById('walletStatus').textContent = `Connected (${walletTypeName}): ${currentNetwork.network.toUpperCase()}`;
+                const balanceStr = document.getElementById('walletBalance')?.textContent.replace('Balance: ','') || 'Loading...';
+                updateWalletDisplay(currentWallet._brand?.name || "Wallet", userAddress, currentNetwork.network, balanceStr);
                 updateEncryptButtonState(); 
                 if (currentNetwork.network !== CONTRACT_CONFIG.network) {
-                    console.warn(`Wallet is on ${currentNetwork.network.toUpperCase()}, but ${CONTRACT_CONFIG.network.toUpperCase()} is required.`);
-                    // Avoid automatic popup from monitoring to prevent annoyance. User must manually correct or re-connect.
+                    console.warn(`Monitor: Wallet switched to ${currentNetwork.network.toUpperCase()}, but ${CONTRACT_CONFIG.network.toUpperCase()} is required.`);
                 }
             }
-            
-            // Account check (optional, can be intensive)
-            // const getAccountsMethod = currentWallet.getAccounts || currentWallet.requestAccounts;
-            // if (getAccountsMethod) {
-            //     try {
-            //         const accounts = await getAccountsMethod.call(currentWallet);
-            //         if (!accounts || accounts.length === 0 || (accounts[0].address || accounts[0]) !== userAddress) {
-            //             console.log("Account change or disconnection detected by monitor's account check.");
-            //             handleDisconnect(currentWallet._brand?.name || "Wallet"); // Use the main disconnect handler
-            //             return; // Stop interval by returning from callback
-            //         }
-            //     } catch (e) { /* ignore, wallet might be locked */ }
-            // }
-
-        } catch (error) {
-            console.error("Error during network status monitoring:", error);
-        }
+        } catch (error) { console.error("Error during network status monitoring:", error); }
     }, 7000); 
 }
 
-
-// Carousel Auto-slide and Navigation
 function initCarousel() {
     const carouselSlidesContainer = document.getElementById('twitterCarousel');
     const prevBtn = document.getElementById('prevSlide');
     const nextBtn = document.getElementById('nextSlide');
     const indicatorsContainer = document.getElementById('carouselIndicators');
 
-    if (!carouselSlidesContainer || !prevBtn || !nextBtn || !indicatorsContainer) {
-        console.warn("Carousel elements not found, skipping initialization.");
-        return;
-    }
+    if (!carouselSlidesContainer || !prevBtn || !nextBtn || !indicatorsContainer) return;
     
     const slides = carouselSlidesContainer.querySelectorAll('.carousel-slide');
     const totalSlides = slides.length;
-    if (totalSlides === 0) {
-        console.warn("No carousel slides found.");
-        return;
-    }
+    if (totalSlides === 0) return;
 
     let currentSlide = 0;
-
     indicatorsContainer.innerHTML = ''; 
-    for (let i = 0; i < totalSlides; i++) {
-        const indicator = document.createElement('div');
-        indicator.classList.add('carousel-indicator');
-        indicator.setAttribute('data-slide', i);
-        indicatorsContainer.appendChild(indicator);
-    }
+    slides.forEach((s, i) => { 
+        s.classList.remove('active'); 
+        const ind = document.createElement('div'); 
+        ind.classList.add('carousel-indicator'); 
+        ind.dataset.slide = i; 
+        indicatorsContainer.appendChild(ind);
+    });
     const indicators = indicatorsContainer.querySelectorAll('.carousel-indicator');
 
-    function goToSlide(slideIndex) {
-        currentSlide = (slideIndex + totalSlides) % totalSlides; 
-        
-        slides.forEach((slide, index) => {
-            // Instead of display none/flex, manage visibility/opacity or translation for smoother transitions if CSS is set up for it.
-            // For now, sticking to display for simplicity as per original.
-            slide.style.display = (index === currentSlide) ? 'flex' : 'none';
-             if (index === currentSlide) slide.classList.add('active'); else slide.classList.remove('active');
-        });
-
-        indicators.forEach((indicator, index) => {
-            indicator.classList.toggle('active', index === currentSlide);
-        });
+    function goToSlide(idx) {
+        currentSlide = (idx + totalSlides) % totalSlides; 
+        slides.forEach((s, i) => s.classList.toggle('active', i === currentSlide));
+        indicators.forEach((ind, i) => ind.classList.toggle('active', i === currentSlide));
     }
-
-    function autoSlide() {
-        goToSlide(currentSlide + 1);
-    }
+    function autoSlide() { goToSlide(currentSlide + 1); }
 
     if (totalSlides > 1) {
-        prevBtn.style.display = 'flex';
-        nextBtn.style.display = 'flex';
-        indicatorsContainer.style.display = 'flex';
-
+        prevBtn.style.display = 'flex'; nextBtn.style.display = 'flex'; indicatorsContainer.style.display = 'flex';
         prevBtn.onclick = () => { goToSlide(currentSlide - 1); resetAutoSlide(); };
         nextBtn.onclick = () => { goToSlide(currentSlide + 1); resetAutoSlide(); };
-
-        indicators.forEach((indicator, index) => {
-            indicator.onclick = () => { goToSlide(index); resetAutoSlide(); };
-        });
-        
+        indicators.forEach((ind, i) => ind.onclick = () => { goToSlide(i); resetAutoSlide(); });
         if (carouselAutoSlideInterval) clearInterval(carouselAutoSlideInterval);
         carouselAutoSlideInterval = setInterval(autoSlide, 7000); 
     } else {
-        prevBtn.style.display = 'none';
-        nextBtn.style.display = 'none';
-        indicatorsContainer.style.display = 'none';
+        prevBtn.style.display = 'none'; nextBtn.style.display = 'none'; indicatorsContainer.style.display = 'none';
     }
-    
     function resetAutoSlide() {
-        if (totalSlides > 1) {
-            clearInterval(carouselAutoSlideInterval);
-            carouselAutoSlideInterval = setInterval(autoSlide, 7000);
-        }
+        if (totalSlides > 1) { clearInterval(carouselAutoSlideInterval); carouselAutoSlideInterval = setInterval(autoSlide, 7000); }
     }
-
     goToSlide(0); 
-
     document.querySelectorAll('.copy-tweet-btn').forEach(button => {
-        const oldHandler = button._copyHandler;
-        if (oldHandler) button.removeEventListener('click', oldHandler);
-        
-        const newHandler = () => {
+        button.onclick = () => {
             const tweetText = button.getAttribute('data-tweet');
-            const twitterIntentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-            window.open(twitterIntentUrl, '_blank');
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`, '_blank');
         };
-        button.addEventListener('click', newHandler);
-        button._copyHandler = newHandler;
     });
-    console.log("Carousel initialized.");
 }
 
-
-// Message Input Character and Byte Counter
 function initMessageInput() {
-    const messageInput = document.getElementById('message');
-    const charCountEl = document.getElementById('charCount');
-    const byteCountEl = document.getElementById('byteCount');
-    const encryptionResultDiv = document.getElementById('encryptionResult');
-    const encryptButton = document.getElementById('encryptMessageBtn'); 
-
-    if (!messageInput || !charCountEl || !byteCountEl || !encryptionResultDiv || !encryptButton) {
-        console.error("Message input or related UI elements not found.");
-        return;
-    }
-
-    encryptionResultDiv.style.display = 'none'; 
-
-    messageInput.addEventListener('input', () => {
-        const text = messageInput.value;
-        const characters = text.length;
-        const bytes = new TextEncoder().encode(text).length;
-
-        charCountEl.textContent = characters;
-        byteCountEl.textContent = bytes;
-
-        charCountEl.style.color = characters > 150 ? 'var(--color-error)' : 'var(--color-text-secondary)';
-        byteCountEl.style.color = bytes > 80 ? 'var(--color-error)' : 'var(--color-text-secondary)';
-        
+    const msgInput = document.getElementById('message'), charCntEl = document.getElementById('charCount'), byteCntEl = document.getElementById('byteCount'), encResDiv = document.getElementById('encryptionResult'), encBtn = document.getElementById('encryptMessageBtn');
+    if (!msgInput || !charCntEl || !byteCntEl || !encResDiv || !encBtn) return;
+    encResDiv.style.display = 'none'; 
+    msgInput.oninput = () => {
+        const txt = msgInput.value, chars = txt.length, bytes = new TextEncoder().encode(txt).length;
+        charCntEl.textContent = chars; byteCntEl.textContent = bytes;
+        charCntEl.style.color = chars > 150 ? 'var(--color-error)' : ''; byteCntEl.style.color = bytes > 80 ? 'var(--color-error)' : '';
         updateEncryptButtonState(); 
-
-        encryptionResultDiv.style.display = 'none'; 
-        document.getElementById('signTransaction').style.display = 'none';
-    });
-
-    const oldEncryptHandler = encryptButton._encryptHandler;
-    if(oldEncryptHandler) encryptButton.removeEventListener('click', oldEncryptHandler);
-    
-    const newEncryptHandler = encryptMessage; 
-    encryptButton.addEventListener('click', newEncryptHandler);
-    encryptButton._encryptHandler = newEncryptHandler;
-    
+        encResDiv.style.display = 'none'; document.getElementById('signTransaction').style.display = 'none';
+    };
+    encBtn.onclick = encryptMessage;
     updateEncryptButtonState(); 
-    console.log("Message input initialized.");
 }
 
 function updateEncryptButtonState() {
-    const encryptButton = document.getElementById('encryptMessageBtn');
-    const messageInput = document.getElementById('message');
-    
-    if (!encryptButton || !messageInput) return; 
-
-    const text = messageInput.value; 
-    const trimmedText = text.trim();
-    const characters = text.length; 
-    const bytes = new TextEncoder().encode(text).length;
-
-    if (!walletConnected) {
-        encryptButton.disabled = true;
-        encryptButton.textContent = "Connect Wallet First";
-        return;
-    }
-    if (currentNetwork.network !== CONTRACT_CONFIG.network) {
-        encryptButton.disabled = true;
-        encryptButton.textContent = "Wrong Network";
-        return;
-    }
-    if (trimmedText === '') {
-        encryptButton.disabled = true;
-        encryptButton.textContent = "Enter Message";
-    } else if (characters > 150) {
-        encryptButton.disabled = true;
-        encryptButton.textContent = "Message Too Long (Chars)";
-    } else if (bytes > 80) {
-        encryptButton.disabled = true;
-        encryptButton.textContent = "Message Too Long (Bytes)";
-    } else {
-        encryptButton.disabled = false;
-        encryptButton.textContent = "Encode & Generate Transaction";
-    }
-}
-
-
-function initModalHandlers() {
-    console.log("Modal core handlers initialized via showModal/hideModal.");
+    const encBtn = document.getElementById('encryptMessageBtn'), msgInput = document.getElementById('message');
+    if (!encBtn || !msgInput) return; 
+    const txt = msgInput.value, trimTxt = txt.trim(), chars = txt.length, bytes = new TextEncoder().encode(txt).length;
+    if (!walletConnected) { encBtn.disabled = true; encBtn.textContent = "Connect Wallet First"; return; }
+    if (currentNetwork.network.toLowerCase() !== CONTRACT_CONFIG.network) { encBtn.disabled = true; encBtn.textContent = "Wrong Network"; return; }
+    if (trimTxt === '') { encBtn.disabled = true; encBtn.textContent = "Enter Message"; }
+    else if (chars > 150) { encBtn.disabled = true; encBtn.textContent = "Message Too Long (Chars)"; }
+    else if (bytes > 80) { encBtn.disabled = true; encBtn.textContent = "Message Too Long (Bytes)"; }
+    else { encBtn.disabled = false; encBtn.textContent = "Encode & Generate Transaction"; }
 }
 
 function initBlockHeightAndCountdown() {
-    const currentBlockHeightElement = document.getElementById('currentBlockHeight');
-    const unlockBlockHeightElement = document.getElementById('unlockBlockHeight');
-    const progressBar = document.getElementById('progressBar');
-    const blockStatusDiv = document.getElementById('blockStatus'); 
-
-    if (!currentBlockHeightElement || !unlockBlockHeightElement || !progressBar || !blockStatusDiv) {
-        console.error("Block height or countdown UI elements not found.");
-        return;
-    }
-
-    const unlockBlock = parseInt(unlockBlockHeightElement.textContent, 10);
-    let currentSimulatedBlock = 0; 
-
-    async function fetchCurrentBlockHeight() {
+    const currBlkEl = document.getElementById('currentBlockHeight'), unlkBlkEl = document.getElementById('unlockBlockHeight'), progBar = document.getElementById('progressBar'), blkStatDiv = document.getElementById('blockStatus');
+    if (!currBlkEl || !unlkBlkEl || !progBar || !blkStatDiv) return;
+    const unlkBlk = parseInt(unlkBlkEl.textContent, 10); let currSimBlk = 0; 
+    async function fetchCurrBlkHght() {
         try {
-            // Replace with actual API for Signet block height
-            // const response = await fetch('https://mempool.space/signet/api/blocks/tip/height');
-            // const heightText = await response.text();
-            // currentSimulatedBlock = parseInt(heightText);
-            // console.log("Fetched block height:", currentSimulatedBlock);
-
-            // Simulation for demo:
-            if (currentBlockHeightElement.textContent === 'Loading...' || isNaN(parseInt(currentBlockHeightElement.textContent))) {
-                currentSimulatedBlock = Math.floor(unlockBlock * 0.95); // Start closer for demo
-            } else {
-                currentSimulatedBlock = parseInt(currentBlockHeightElement.textContent, 10);
-                if (currentSimulatedBlock < unlockBlock) {
-                     currentSimulatedBlock += 1; // Simulate 1 new block
-                     currentSimulatedBlock = Math.min(currentSimulatedBlock, unlockBlock);
-                }
-            }
-            currentBlockHeightElement.textContent = currentSimulatedBlock;
-            updateBlockStatusUI(currentSimulatedBlock, unlockBlock);
-        } catch (error) {
-            console.error("Failed to fetch/simulate current block height:", error);
-            currentBlockHeightElement.textContent = 'Error';
-            blockStatusDiv.innerHTML = '<p class="status-text error-text">Failed to load block status.</p>';
-            blockStatusDiv.className = 'status-indicator error';
-            if (countdownInterval) clearInterval(countdownInterval);
-        }
+            // Replace with actual API for Signet: e.g. https://mempool.space/signet/api/blocks/tip/height
+            // const resp = await fetch('https://mempool.space/signet/api/blocks/tip/height'); const hghtTxt = await resp.text(); currSimBlk = parseInt(hghtTxt);
+            if (currBlkEl.textContent === 'Loading...' || isNaN(parseInt(currBlkEl.textContent))) currSimBlk = Math.floor(unlkBlk * 0.98);
+            else { currSimBlk = parseInt(currBlkEl.textContent, 10); if (currSimBlk < unlkBlk) { currSimBlk += 1; currSimBlk = Math.min(currSimBlk, unlkBlk);}}
+            currBlkEl.textContent = currSimBlk; updBlkStatUI(currSimBlk, unlkBlk);
+        } catch (err) { currBlkEl.textContent = 'Error'; blkStatDiv.innerHTML = '<p class="status-text error-text">Block status error.</p>'; blkStatDiv.className = 'status-indicator error'; if (countdownInterval) clearInterval(countdownInterval); }
     }
-
-    function updateBlockStatusUI(currentBlock, targetUnlockBlock) {
-        const blocksRemaining = Math.max(0, targetUnlockBlock - currentBlock);
-        
-        const progressPercentage = Math.min(100, (currentBlock / targetUnlockBlock) * 100);
-        progressBar.style.width = `${progressPercentage}%`;
-        
-        const blocksRemainingEl = document.getElementById('blocksRemaining');
-        if (blocksRemainingEl) blocksRemainingEl.textContent = blocksRemaining;
-
-        if (blocksRemaining <= 0) {
-            blockStatusDiv.className = 'status-indicator unlocked';
-            const statusTextEl = blockStatusDiv.querySelector('.status-text');
-            if(statusTextEl) statusTextEl.textContent = '🎉 Time Capsule messages are now unlockable!';
-            const countdownGrid = blockStatusDiv.querySelector('.countdown-grid');
-            if (countdownGrid) countdownGrid.style.display = 'none';
-            if (countdownInterval) clearInterval(countdownInterval);
-            countdownInterval = null;
+    function updBlkStatUI(currBlk, trgtUnlkBlk) {
+        const blksRem = Math.max(0, trgtUnlkBlk - currBlk), progPerc = Math.min(100, (currBlk / trgtUnlkBlk) * 100);
+        progBar.style.width = `${progPerc}%`; 
+        const blksRemEl = document.getElementById('blocksRemaining'); if (blksRemEl) blksRemEl.textContent = blksRem;
+        if (blksRem <= 0) {
+            blkStatDiv.className = 'status-indicator unlocked'; const stTxtEl = blkStatDiv.querySelector('.status-text'); if(stTxtEl) stTxtEl.textContent = '🎉 Capsules Unlockable!';
+            const cntDwnGrid = blkStatDiv.querySelector('.countdown-grid'); if (cntDwnGrid) cntDwnGrid.style.display = 'none';
+            if (countdownInterval) clearInterval(countdownInterval); countdownInterval = null;
         } else {
-            blockStatusDiv.className = 'status-indicator pending';
-            const statusTextEl = blockStatusDiv.querySelector('.status-text');
-            if(statusTextEl) statusTextEl.innerHTML = `Time Capsule messages will be unlockable in approximately <span id="blocksRemaining">${blocksRemaining}</span> blocks`;
-            const countdownGrid = blockStatusDiv.querySelector('.countdown-grid');
-            if (countdownGrid) countdownGrid.style.display = 'grid'; 
-
-            const estimatedTotalSecondsRemaining = blocksRemaining * 600; // Avg 10 mins per block
-            const now = new Date().getTime();
-            const estimatedUnlockTimestamp = now + (estimatedTotalSecondsRemaining * 1000);
-
+            blkStatDiv.className = 'status-indicator pending'; const stTxtEl = blkStatDiv.querySelector('.status-text'); if(stTxtEl) stTxtEl.innerHTML = `Unlocks in ~<span id="blocksRemaining">${blksRem}</span> blocks`;
+            const cntDwnGrid = blkStatDiv.querySelector('.countdown-grid'); if (cntDwnGrid) cntDwnGrid.style.display = 'grid'; 
+            const estTotSecsRem = blksRem * 600, now = new Date().getTime(), estUnlkTS = now + (estTotSecsRem * 1000);
             if (countdownInterval) clearInterval(countdownInterval);
             countdownInterval = setInterval(() => {
-                const currentTime = new Date().getTime();
-                let diff = estimatedUnlockTimestamp - currentTime;
-
-                if (diff <= 0) {
-                    diff = 0; 
-                    fetchCurrentBlockHeight(); 
-                }
-
-                const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const s = Math.floor((diff % (1000 * 60)) / 1000);
-
-                document.getElementById('countdownDays').textContent = d;
-                document.getElementById('countdownHours').textContent = h.toString().padStart(2, '0');
-                document.getElementById('countdownMinutes').textContent = m.toString().padStart(2, '0');
-                document.getElementById('countdownSeconds').textContent = s.toString().padStart(2, '0');
+                const currTime = new Date().getTime(); let diff = estUnlkTS - currTime;
+                if (diff <= 0) { diff = 0; fetchCurrBlkHght(); }
+                const d = Math.floor(diff/(1000*60*60*24)), h = Math.floor((diff%(1000*60*60*24))/(1000*60*60)), m = Math.floor((diff%(1000*60*60))/(1000*60)), s = Math.floor((diff%(1000*60))/1000);
+                document.getElementById('countdownDays').textContent=d; document.getElementById('countdownHours').textContent=h.toString().padStart(2,'0'); document.getElementById('countdownMinutes').textContent=m.toString().padStart(2,'0'); document.getElementById('countdownSeconds').textContent=s.toString().padStart(2,'0');
             }, 1000);
         }
     }
-
-    fetchCurrentBlockHeight(); 
-    setInterval(fetchCurrentBlockHeight, 30000); 
-    console.log("Block height and countdown initialized.");
+    fetchCurrBlkHght(); setInterval(fetchCurrBlkHght, 30000); 
 }
 
 function initTabs() {
-    const tabButtons = document.querySelectorAll('.tabs .tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    if (!tabButtons.length || !tabContents.length) {
-        console.warn("Tab UI elements not found.");
-        return;
-    }
-
-    tabButtons.forEach(button => {
-        const oldHandler = button._tabHandler;
-        if (oldHandler) button.removeEventListener('click', oldHandler);
-
-        const newHandler = () => {
-            const targetTabId = button.getAttribute('data-tab');
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active')); // Make sure this works with CSS
-            button.classList.add('active');
-            const targetContent = document.getElementById(targetTabId);
-            if (targetContent) {
-                targetContent.classList.add('active'); // Ensure this makes it display: block;
-            }
+    const tabBtns = document.querySelectorAll('.tabs .tab-btn'), tabCnts = document.querySelectorAll('.tab-content');
+    if (!tabBtns.length || !tabCnts.length) return;
+    tabBtns.forEach(btn => {
+        btn.onclick = () => {
+            const trgtTabId = btn.getAttribute('data-tab'); 
+            tabBtns.forEach(b => b.classList.remove('active')); tabCnts.forEach(c => c.classList.remove('active')); 
+            btn.classList.add('active'); const trgtCnt = document.getElementById(trgtTabId); if (trgtCnt) trgtCnt.classList.add('active');
         };
-        button.addEventListener('click', newHandler);
-        button._tabHandler = newHandler;
     });
-
-    if (tabButtons.length > 0 && !document.querySelector('.tabs .tab-btn.active')) {
-         tabButtons[0].click(); // Activate first tab if none are active
-    } else if (document.querySelector('.tabs .tab-btn.active')) {
-        // If one is already active from HTML, ensure its content is shown
-        const activeTab = document.querySelector('.tabs .tab-btn.active');
-        const activeContentId = activeTab.getAttribute('data-tab');
-        const activeContent = document.getElementById(activeContentId);
-        if (activeContent) activeContent.classList.add('active');
+    if (tabBtns.length > 0 && !document.querySelector('.tabs .tab-btn.active')) tabBtns[0].click();
+    else if (document.querySelector('.tabs .tab-btn.active')) {
+        const actTab = document.querySelector('.tabs .tab-btn.active'), actCntId = actTab.getAttribute('data-tab'), actCnt = document.getElementById(actCntId);
+        if (actCnt) actCnt.classList.add('active');
     }
-    console.log("Tabs initialized.");
 }
 
 function initDonationAddressCopy() {
-    const donationAddressDiv = document.getElementById('donationAddress');
-    if (!donationAddressDiv) {
-        console.error("Donation address UI element not found.");
-        return;
-    }
-    
-    const addressTextEl = document.getElementById('donationAddressText');
-    const confirmationEl = donationAddressDiv.querySelector('.copy-confirmation');
-
-    if (!addressTextEl || !confirmationEl) {
-        console.error("Donation address sub-elements (text or confirmation) not found.");
-        return;
-    }
-
-    const oldHandler = donationAddressDiv._copyHandler;
-    if(oldHandler) donationAddressDiv.removeEventListener('click', oldHandler);
-
-    const newHandler = async () => {
-        try {
-            await navigator.clipboard.writeText(addressTextEl.textContent);
-            confirmationEl.classList.add('show');
-            setTimeout(() => confirmationEl.classList.remove('show'), 2000); 
-        } catch (err) {
-            console.error('Failed to copy donation address:', err);
-            showModal("Copy Error", "<p>Could not copy address. Please try manually.</p>");
-        }
+    const donAddrDiv = document.getElementById('donationAddress'); if (!donAddrDiv) return;
+    const addrTxtEl = document.getElementById('donationAddressText'), confEl = donAddrDiv.querySelector('.copy-confirmation');
+    if (!addrTxtEl || !confEl) return;
+    donAddrDiv.onclick = async () => {
+        try { await navigator.clipboard.writeText(addrTxtEl.textContent); confEl.classList.add('show'); setTimeout(() => confEl.classList.remove('show'), 2000); } 
+        catch (err) { showModal("Copy Error", "<p>Could not copy address.</p>"); }
     };
-    donationAddressDiv.addEventListener('click', newHandler);
-    donationAddressDiv._copyHandler = newHandler;
-    console.log("Donation address copy initialized.");
 }
 
 async function encryptMessage() { 
-    console.log("Encode message button clicked.");
-    if (!walletConnected || !currentWallet) {
-        showModal("Wallet Error", "<p>Please connect your wallet and ensure it's on the correct network.</p>");
-        await checkInitialConnection(); // Attempt recovery
-        if (!walletConnected) return;
-    }
-    updateEncryptButtonState(); 
-    if (document.getElementById('encryptMessageBtn').disabled) { 
-        console.warn("Encode attempt aborted due to validation failure.");
-        // A modal could be shown here if the button's text isn't clear enough
-        // e.g., if(encryptButton.textContent.includes("Too Long")) showModal("Error", "<p>Message is too long.</p>");
-        return;
-    }
-
-    const messageInput = document.getElementById('message');
-    const encodedMessageOutput = document.getElementById('encodedMessageOutput');
-    const outputDiv = document.getElementById('output');
-    const signTransactionButton = document.getElementById('signTransaction');
-    const encryptionResultDiv = document.getElementById('encryptionResult');
-
-    const message = messageInput.value; 
-    if (message.trim() === '') { 
-        showModal("Error", "<p>Please enter a message to encode.</p>");
-        return;
-    }
-
-    const encodedMessage = btoa(unescape(encodeURIComponent(message))); 
-    encodedMessageOutput.textContent = encodedMessage;
-
-    const dummyPsbtHex = "70736274ff0100...[dummy_psbt_data_for_signet_inscription_and_fee_payment]..."; 
-    
-    outputDiv.innerHTML = `
-        <p class="alert alert-warning"><strong>Developer Note:</strong> The transaction details below are simplified for this demo. Real PSBT construction for inscriptions is complex and involves UTXO management, fee calculations, and specific output scripting for the message and contract fee.</p>
-        <div class="transaction-detail"><span class="detail-label">Action:</span><span class="detail-value">Store Message (Inscription)</span></div>
-        <div class="transaction-detail"><span class="detail-label">Fee Recipient:</span><span class="detail-value">${CONTRACT_CONFIG.feeRecipient}</span></div>
-        <div class="transaction-detail"><span class="detail-label">Storage Fee:</span><span class="detail-value">${CONTRACT_CONFIG.feeAmount} Signet BTC</span></div>
-        <div class="transaction-detail"><span class="detail-label">Unlock Block:</span><span class="detail-value">${CONTRACT_CONFIG.unlockBlockHeight}</span></div>
-        <div class="transaction-detail"><span class="detail-label">Message (Base64):</span><span class="detail-value code-block small">${encodedMessage}</span></div>
-        <div class="transaction-detail" style="display:none;"><span class="detail-label">Dummy PSBT Hex:</span><span class="detail-value code-block small">${dummyPsbtHex}</span></div>
-    `; // Hide dummy PSBT from user for cleaner UI
-
-    encryptionResultDiv.style.display = 'block';
-    signTransactionButton.style.display = 'block';
-    
-    const oldSignHandler = signTransactionButton._signHandler;
-    if(oldSignHandler) signTransactionButton.removeEventListener('click', oldSignHandler);
-
-    const newSignHandler = () => signAndSubmitTransaction(dummyPsbtHex, encodedMessage); 
-    signTransactionButton.addEventListener('click', newSignHandler);
-    signTransactionButton._signHandler = newSignHandler;
-    
-    console.log("Message encoded, placeholder transaction details generated.");
+    if (!walletConnected || !currentWallet) { showModal("Wallet Error", "<p>Connect wallet and ensure correct network.</p>"); await checkInitialConnection(); if (!walletConnected) return; }
+    updateEncryptButtonState(); if (document.getElementById('encryptMessageBtn').disabled) return;
+    const msgInput = document.getElementById('message'), encMsgOut = document.getElementById('encodedMessageOutput'), outDiv = document.getElementById('output'), signBtn = document.getElementById('signTransaction'), encResDiv = document.getElementById('encryptionResult');
+    const msg = msgInput.value; if (msg.trim() === '') { showModal("Error", "<p>Enter message.</p>"); return; }
+    const encMsg = btoa(unescape(encodeURIComponent(msg))); encMsgOut.textContent = encMsg;
+    const dummyPsbt = "70736274..."; // Placeholder for actual PSBT construction
+    outDiv.innerHTML = `<div class="transaction-detail"><span class="detail-label">Action:</span><span class="detail-value">Store Message</span></div><div class="transaction-detail"><span class="detail-label">Fee:</span><span class="detail-value">${CONTRACT_CONFIG.feeAmount} Signet BTC</span></div><div class="transaction-detail"><span class="detail-label">Message:</span><span class="detail-value code-block small">${encMsg}</span></div><p class="alert alert-info mt-sm">Real PSBT construction is complex & omitted for demo.</p>`;
+    encResDiv.style.display = 'block'; signBtn.style.display = 'block';
+    signBtn.onclick = () => signAndSubmitTransaction(dummyPsbt, encMsg); 
 }
 
 async function signAndSubmitTransaction(psbtHex, originalMessageBase64) { 
-    console.log("Sign and Submit button clicked.");
-    if (!walletConnected || !currentWallet) {
-        showModal("Wallet Error", "<p>Wallet not connected. Please connect your wallet.</p>");
-        await checkInitialConnection();
-        if (!walletConnected) return;
-    }
-    
-    if (!currentWallet.signPsbt || !currentWallet.pushTx) {
-        const walletName = currentWallet._brand?.name || "Connected wallet";
-        showModal("Unsupported Wallet", `<p>${walletName} does not support the required PSBT signing or broadcasting functions needed by this demo.</p>`);
-        return;
-    }
-
-    showModal("Signing Transaction", "<p>Please approve the transaction in your wallet...</p>");
-
+    if (!walletConnected || !currentWallet) { showModal("Wallet Error", "<p>Wallet not connected.</p>"); await checkInitialConnection(); if (!walletConnected) return; }
+    if (!currentWallet.signPsbt) { showModal("Unsupported Wallet", `<p>${currentWallet._brand?.name || "Wallet"} doesn't support PSBT signing for this demo.</p>`); return; }
+    showModal("Signing Transaction", "<p>Approve transaction in your wallet...</p>");
     try {
-        const signOptions = { autoFinalized: true }; 
-        
-        console.log("Attempting to sign PSBT (dummy):", psbtHex.substring(0, 30) + "..."); // Log snippet
-        const signedPsbtHex = await currentWallet.signPsbt(psbtHex, signOptions);
-        console.log("Transaction signed (dummy PSBT), result:", signedPsbtHex.substring(0,30) + "...");
+        // SatsConnect expects PSBT as base64. Other wallets might expect hex.
+        // This dummy psbtHex is hex. For SatsConnect, it should be converted to base64.
+        let psbtToSign = psbtHex;
+        if (currentWallet._satsConnect) { // Check if it's a SatsConnect shimmed wallet
+           // Convert hex to Uint8Array then to base64
+            const byteArray = new Uint8Array(psbtHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+            psbtToSign = btoa(String.fromCharCode.apply(null, byteArray));
+        }
+
+        const signedPsbt = await currentWallet.signPsbt(psbtToSign, { autoFinalized: true }); // signedPsbt might be hex or base64
         
         hideModal(); 
-        showModal("Broadcasting Transaction", "<p>Broadcasting transaction (simulated for dummy PSBT)...</p>");
-        
-        const simulatedTxId = "simulated_txid_" + Date.now().toString(36) + Math.random().toString(36).substring(2);
-        console.log(`Simulated broadcast. Tx ID: ${simulatedTxId}`);
-        // const txId = await currentWallet.pushTx(signedPsbtHex); // Real call
-        
-        hideModal();
-        showModal("Transaction Submitted (Simulated)", 
-            `<p>Your message has been submitted to the Bitcoin Signet network (simulation complete)!</p>
-             <p>Transaction ID (Simulated): <a href="https://mempool.space/signet/tx/${simulatedTxId}" target="_blank">${simulatedTxId}</a></p>
-             <p><strong>Note:</strong> This is based on a dummy PSBT. In a real application, this would be a live transaction.</p>`);
-        
-        document.getElementById('message').value = '';
-        document.getElementById('charCount').textContent = '0';
-        document.getElementById('byteCount').textContent = '0';
-        document.getElementById('encryptionResult').style.display = 'none';
-        document.getElementById('signTransaction').style.display = 'none';
-        updateEncryptButtonState();
-
+        // For demo, we'll simulate broadcast success without actual pushTx which is complex and wallet-specific for hex/base64
+        const simTxId = "sim_tx_" + Date.now().toString(16);
+        showModal("Transaction Submitted (Simulated)", `<p>Capsule submitted (simulated)!</p><p>TxID (Sim): <a href="https://mempool.space/signet/tx/${simTxId}" target="_blank">${simTxId}</a></p><p>Real broadcast would use wallet's pushTx or an API.</p>`);
+        document.getElementById('message').value = ''; updateEncryptButtonState();
+        document.getElementById('encryptionResult').style.display = 'none'; document.getElementById('signTransaction').style.display = 'none';
     } catch (error) {
-        console.error("Transaction signing or broadcasting failed:", error);
         hideModal();
-        showModal("Transaction Failed", `<p>Could not sign or submit the transaction.</p><p>Details: ${error.message || 'Unknown error (check console)'}</p><p>This might be due to the dummy PSBT used in this demo, wallet rejection, or a network issue.</p>`);
+        showModal("Transaction Failed", `<p>Sign/submit error.</p><p>Details: ${error.message || 'Unknown (check console)'}</p><p>Could be wallet rejection or demo limitation.</p>`);
     }
 }
 
-
-function loadStoredMessages() {
-    const listEl = document.getElementById('storedMessagesList');
-    listEl.innerHTML = '<p>No stored messages found (demo). This feature would list your past time capsules.</p>';
-    console.log("Stored messages placeholder loaded.");
-}
-
-function retrieveMessage(txId, encodedMessage) { 
-    console.log(`Retrieving message for TxID: ${txId}`);
-    try {
-        const decodedMessage = decodeURIComponent(escape(atob(encodedMessage))); 
-        showModal("Retrieved Message", `<p><strong>Original Message:</strong></p><p style="word-break: break-word;">${decodedMessage.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`);
-    } catch (e) {
-        console.error("Failed to decode message:", e);
-        showModal("Decoding Error", "<p>Could not decode the message. It might be corrupted or not valid Base64.</p>");
-    }
-}
-
+function loadStoredMessages() { document.getElementById('storedMessagesList').innerHTML = '<p>No capsules stored (Demo).</p>';}
+function retrieveMessage(txId, encMsg) { try { const decMsg = decodeURIComponent(escape(atob(encMsg))); showModal("Retrieved Message", `<p><strong>Message:</strong></p><p style="word-break: break-word;">${decMsg.replace(/</g,"<").replace(/>/g,">")}</p>`); } catch (e) { showModal("Decoding Error", "<p>Could not decode message.</p>"); }}
 function checkMessage() {
-    const txIdInput = document.getElementById('txIdInput');
-    const statusDiv = document.getElementById('messageStatus');
-    const txId = txIdInput.value.trim();
-
-    if (!txId) {
-        statusDiv.innerHTML = '<p class="alert alert-warning">Please enter a Transaction ID.</p>';
-        return;
-    }
-    statusDiv.innerHTML = `<p>Checking status for TX ID: ${txId} (demo)...</p>`;
-    setTimeout(() => {
-        const isUnlocked = Math.random() > 0.5;
-        const dummyEncoded = 'SGVsbG8gZnJvbSB0aGUgZnV0dXJlIQ=='; // "Hello from the future!"
-        statusDiv.innerHTML = `
-            <div class="message-item alert ${isUnlocked ? 'alert-success' : 'alert-info'}">
-                <p><strong>TX ID:</strong> ${txId}</p>
-                <p><strong>Status:</strong> ${isUnlocked ? 'Unlocked (Demo)' : 'Pending (Demo)'}</p>
-                ${isUnlocked ? `<p><strong>Encoded Message (Demo):</strong> <span class="code-block small">${dummyEncoded}</span></p>
-                                <button class="btn btn-primary btn-sm mt-sm" onclick="decodeAndDisplayMessage('${dummyEncoded}')">Decode & View</button>`
-                             : ''}
-            </div>`;
-    }, 1000);
-    console.log(`Message check placeholder for TxID: ${txId}`);
+    const txIdIn = document.getElementById('txIdInput'), statDiv = document.getElementById('messageStatus'), txId = txIdIn.value.trim();
+    if (!txId) { statDiv.innerHTML = '<p class="alert alert-warning">Enter Transaction ID.</p>'; return; }
+    statDiv.innerHTML = `<p>Checking TXID: ${txId} (demo)...</p>`;
+    setTimeout(() => { const unl = Math.random()>0.5, dEnc = 'SGVsbG8gdGhlcmUh'; statDiv.innerHTML = `<div class="message-item alert ${unl?'alert-success':'alert-info'}"><p><strong>TXID:</strong> ${txId}</p><p><strong>Status:</strong> ${unl?'Unlocked (Demo)':'Pending (Demo)'}</p>${unl?`<p class="code-block small">${dEnc}</p><button class="btn btn-primary btn-sm mt-sm" onclick="decodeAndDisplayMessage('${dEnc}')">Decode</button>`:''}</div>`;},1000);
 }
-
-function decodeAndDisplayMessage(encodedMessage) { 
-    console.log(`Decoding message from lookup.`);
-    try {
-        const decodedMessage = decodeURIComponent(escape(atob(encodedMessage)));
-        showModal("Retrieved Message", `<p><strong>Original Message:</strong></p><p style="word-break: break-word;">${decodedMessage.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`);
-    } catch (e) {
-        console.error("Failed to decode message from lookup:", e);
-        showModal("Decoding Error", "<p>Could not decode the message from lookup.</p>");
-    }
-}
-
-function updateVisitorCounter() {
-    const countElement = document.getElementById('visitorCount');
-    if (countElement) {
-        let count = parseInt(localStorage.getItem('visitorCount_timecapsule_v2') || '0');
-        count++;
-        countElement.textContent = count.toLocaleString();
-        localStorage.setItem('visitorCount_timecapsule_v2', count.toString());
-    }
-}
-
+function decodeAndDisplayMessage(encMsg) { try { const decMsg = decodeURIComponent(escape(atob(encMsg))); showModal("Retrieved Message", `<p><strong>Message:</strong></p><p style="word-break: break-word;">${decMsg.replace(/</g,"<").replace(/>/g,">")}</p>`); } catch (e) { showModal("Decoding Error", "<p>Could not decode.</p>"); }}
+function updateVisitorCounter() { const cntEl = document.getElementById('visitorCount'); if(cntEl){let c = parseInt(localStorage.getItem('visitorCount_tc_v3')||'0');c++;cntEl.textContent=c.toLocaleString();localStorage.setItem('visitorCount_tc_v3',c.toString());}}
 
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log("DOM fully loaded - Initializing application");
-
-    initModalHandlers();
-    initCarousel();
-    initMessageInput(); 
-    initBlockHeightAndCountdown();
-    initTabs();
-    initDonationAddressCopy();
-    updateVisitorCounter();
-
-    try {
-        await initWalletConnection(); 
-    } catch (e) {
-        console.error("Error during wallet initialization phase:", e);
-    }
-    
+    initCarousel(); initMessageInput(); initBlockHeightAndCountdown(); initTabs(); initDonationAddressCopy(); updateVisitorCounter();
+    try { await initWalletConnection(); } catch (e) { console.error("Error during main wallet initialization:", e); }
     loadStoredMessages();
-
-    console.log("Application initialization sequence complete.");
 });
