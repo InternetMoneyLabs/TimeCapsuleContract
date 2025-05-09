@@ -10,13 +10,15 @@
     <link rel="manifest" href="site.webmanifest">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' chrome-extension: unpkg.com https://mempool.space; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src *; img-src 'self' data:;">
 </head>
 <body>
     <div class="banner">
+        <div class="container">
         🧪 EXPERIMENTAL: Testnet demo only. Verify URL: <a href="https://internetmoneylabs.github.io/TimeCapsuleContract/" target="_blank" class="banner-link">internetmoneylabs.github.io/TimeCapsuleContract</a>
+        </div>
     </div>
 
     <header class="site-header">
@@ -44,211 +46,128 @@
             <div class="content-grid">
                 <section class="info-section">
                     <article class="card">
-                        <h2 class="card-title">📌 What is TimeCapsuleContract?</h2>
+                        <h2 class="card-title">📌 What is This?</h2>
                         <p class="card-text">
-                            A blockchain-based message vault that lets users store encoded messages on Bitcoin Signet.
-                            Messages remain locked until a specific future block height is reached.
-                            Once unlockable, the first three participants to retrieve messages receive portions of the fees.
+                            A decentralized message vault. Store encoded messages on Bitcoin Signet, locked until a future block height. Early unlockers share rewards!
                         </p>
 
                         <div class="alert alert-warning">
-                            <h3 class="alert-title">🚨 Important: Signet BTC Only!</h3>
+                            <h3 class="alert-title">🚨 Signet Testnet Only!</h3>
                             <p class="alert-text">
-                                This contract operates on <strong>Bitcoin Signet (testnet)</strong>, not real BTC.
-                                You can request free Signet BTC from a <a href="https://signetfaucet.com/" target="_blank">Bitcoin Signet Faucet</a>.
+                                This uses <strong>Bitcoin Signet (testnet)</strong> coins, which have no real value. Get free Signet BTC from a <a href="https://signetfaucet.com/" target="_blank">Signet Faucet</a>.
                             </p>
                         </div>
 
-                        <h3 class="card-subtitle">🔹 Enable Signet in Your Wallet</h3>
-                        <p class="card-text">
-                            To interact with the contract, switch your wallet to Signet Mode:<br>
-                            - Unisat: Network icon → "Bitcoin Testnet, Signet".<br>
-                            - Xverse: Settings → Network → "Bitcoin Testnet (Signet)".<br>
-                            - OKX: Settings/Wallet → Network → "Bitcoin Testnet".<br>
-                            - Leather: Network selector → "Signet".
-                        </p>
+                        <h3 class="card-subtitle">🔹 Wallet Setup (Signet)</h3>
+                        <ul class="setup-list">
+                            <li><strong>Unisat:</strong> Network icon → "Bitcoin Testnet, Signet".</li>
+                            <li><strong>Xverse:</strong> Settings → Network → "Bitcoin Testnet (Signet)".</li>
+                            <li><strong>OKX:</strong> Settings/Wallet → Network → "Bitcoin Testnet".</li>
+                            <li><strong>Leather:</strong> Network selector → "Signet".</li>
+                        </ul>
                     </article>
 
                     <article class="card">
-                        <h2 class="card-title">💰 Fee Distribution</h2>
+                        <h2 class="card-title">💰 Fee & Rewards</h2>
                         <div class="fee-grid">
-                            <div class="fee-item">
-                                <div class="fee-percentage">30%</div>
-                                <div class="fee-label">First Unlocker</div>
-                            </div>
-                            <div class="fee-item">
-                                <div class="fee-percentage">20%</div>
-                                <div class="fee-label">Second Unlocker</div>
-                            </div>
-                            <div class="fee-item">
-                                <div class="fee-percentage">10%</div>
-                                <div class="fee-label">Third Unlocker</div>
-                            </div>
-                            <div class="fee-item">
-                                <div class="fee-percentage">40%</div>
-                                <div class="fee-label">Contract Support</div>
-                            </div>
+                            <div class="fee-item"><span>30%</span><label>1st Unlocker</label></div>
+                            <div class="fee-item"><span>20%</span><label>2nd Unlocker</label></div>
+                            <div class="fee-item"><span>10%</span><label>3rd Unlocker</label></div>
+                            <div class="fee-item"><span>40%</span><label>Dev Support</label></div>
                         </div>
-                        <p class="fee-note">Storage Fee: 0.0001 Signet BTC per message</p>
+                        <p class="fee-note">Storage Fee: 0.0001 Signet BTC per message.</p>
                     </article>
                     <article class="card">
                         <h2 class="card-title">🐦 Share Your Capsule!</h2>
                         <div class="twitter-carousel">
                             <div class="carousel-container">
                                 <div class="carousel-slides" id="twitterCarousel">
-                                    <div class="carousel-slide">
-                                        <div class="carousel-slide-content">
-                                            <img src="twitter-x.png" alt="Twitter post 1" class="carousel-slide-image">
-                                            <p class="carousel-slide-text">🔒 Just sealed my thoughts in a #Bitcoin Time Capsule on Signet! 🚀 Unlocks at block 263527. First few unlockers get prizes! Be ready! #BRC20 #Crypto</p>
-                                            <div class="carousel-slide-actions">
-                                                <button class="copy-tweet-btn" data-tweet="🔒 Just sealed my thoughts in a #Bitcoin Time Capsule on Signet! 🚀 Unlocks at block 263527. First few unlockers get prizes! Be ready! #BRC20 #Crypto https://internetmoneylabs.github.io/TimeCapsuleContract">
-                                                    Tweet This
-                                                </button>
-                                            </div>
-                                        </div>
                                     </div>
-                                    <div class="carousel-slide">
-                                        <div class="carousel-slide-content">
-                                            <img src="twitter-xi.png" alt="Twitter post 2" class="carousel-slide-image">
-                                            <p class="carousel-slide-text">Time to send a message to the future via #Bitcoin! ⏳ Using Time Capsule on Signet. Get your wallet ready for block 263527. Prizes inside! 😉 #BitcoinTimeCapsule</p>
-                                            <div class="carousel-slide-actions">
-                                                <button class="copy-tweet-btn" data-tweet="Time to send a message to the future via #Bitcoin! ⏳ Using Time Capsule on Signet. Get your wallet ready for block 263527. Prizes inside! 😉 #BitcoinTimeCapsule https://internetmoneylabs.github.io/TimeCapsuleContract">
-                                                    Tweet This
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="carousel-slide">
-                                        <div class="carousel-slide-content">
-                                            <img src="twitter-xiii.png" alt="Twitter post 3" class="carousel-slide-image">
-                                            <p class="carousel-slide-text">Got a secret for block 263527? 🤫 Store it in the #Bitcoin Time Capsule! Running on Signet. Unlockers earn fees! Check it out! 👇 #CryptoNews</p>
-                                            <div class="carousel-slide-actions">
-                                                <button class="copy-tweet-btn" data-tweet="Got a secret for block 263527? 🤫 Store it in the #Bitcoin Time Capsule! Running on Signet. Unlockers earn fees! Check it out! 👇 #CryptoNews https://internetmoneylabs.github.io/TimeCapsuleContract">
-                                                    Tweet This
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="carousel-slide">
-                                        <div class="carousel-slide-content">
-                                            <img src="twitter-xiiii.png" alt="Twitter post 4" class="carousel-slide-image">
-                                            <p class="carousel-slide-text">Testing out the #Bitcoin Time Capsule on Signet! 🛠️ Write a message, lock it till block 263527. Simple, secure, and rewards unlockers! Pretty cool. 😎 #BitcoinDevelopement</p>
-                                            <div class="carousel-slide-actions">
-                                                <button class="copy-tweet-btn" data-tweet="Testing out the #Bitcoin Time Capsule on Signet! 🛠️ Write a message, lock it till block 263527. Simple, secure, and rewards unlockers! Pretty cool. 😎 #BitcoinDevelopement https://internetmoneylabs.github.io/TimeCapsuleContract">
-                                                    Tweet This
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                                 <button class="carousel-nav prev" id="prevSlide" aria-label="Previous slide">❮</button>
                                 <button class="carousel-nav next" id="nextSlide" aria-label="Next slide">❯</button>
-                                <div class="carousel-indicators" id="carouselIndicators">
-                                </div>
+                                <div class="carousel-indicators" id="carouselIndicators"></div>
                             </div>
                         </div>
                     </article>
 
                     <article class="card">
-                        <h2 class="card-title">🙏 Special Thanks</h2>
+                        <h2 class="card-title">🙏 Acknowledgements</h2>
                         <div class="thanks-content">
                             <p>To <a href="https://twitter.com/rodarmor" target="_blank">Casey Rodarmor</a> for Ordinals.</p>
-                            <h3 class="thanks-subtitle">Wallet Providers:</h3>
+                            <h3 class="thanks-subtitle">Providers & Tools:</h3>
                             <div class="wallet-links-compact">
-                                <a href="https://unisat.io/download" target="_blank"><img src="unisat-logo.png" alt="Unisat" class="wallet-icon-small"> Unisat Wallet</a>
-                                <a href="https://www.xverse.app/download" target="_blank"><img src="xverse-logo.png" alt="Xverse" class="wallet-icon-small"> Xverse Wallet</a>
-                                <a href="https://www.okx.com/web3/wallet" target="_blank"><img src="okx-logo.png" alt="OKX" class="wallet-icon-small"> OKX Wallet</a>
-                                <a href="https://leather.io/install" target="_blank"><img src="leather-logo.png" alt="Leather" class="wallet-icon-small"> Leather Wallet</a>
+                                <a href="https://unisat.io" target="_blank"><img src="unisat-logo.png" alt="Unisat">Unisat</a>
+                                <a href="https://xverse.app" target="_blank"><img src="xverse-logo.png" alt="Xverse">Xverse</a>
+                                <a href="https://okx.com/web3" target="_blank"><img src="okx-logo.png" alt="OKX">OKX Wallet</a>
+                                <a href="https://leather.io" target="_blank"><img src="leather-logo.png" alt="Leather">Leather</a>
                             </div>
-                            <p>API support from <a href="https://bestinslot.xyz/" target="_blank">BestInSlot</a> and <a href="https://mempool.space" target="_blank">Mempool.space</a>.</p>
-                            <p>To the Ordinals community, <a href="https://aws.amazon.com/q/" target="_blank">Amazon Q</a>, and <a href="https://pages.github.com/" target="_blank">GitHub Pages</a>.</p>
+                            <p>APIs: <a href="https://bestinslot.xyz/" target="_blank">BestInSlot</a>, <a href="https://mempool.space" target="_blank">Mempool.space</a>. Hosting: <a href="https://pages.github.com/" target="_blank">GitHub Pages</a>.</p>
                         </div>
                     </article>
                 </section>
 
                 <section class="action-section">
                     <article class="card">
-                        <h2 class="card-title">⏱️ Time Capsule Status</h2>
+                        <h2 class="card-title">⏱️ Capsule Status</h2>
                         <div class="block-info">
                             <div class="block-stats">
                                 <div class="block-stat">
-                                    <span class="block-label">Current Block:</span>
+                                    <span class="block-label">Current Block</span>
                                     <span id="currentBlockHeight" class="block-value">Loading...</span>
                                 </div>
                                 <div class="block-stat">
-                                    <span class="block-label">Unlock Block:</span>
+                                    <span class="block-label">Unlock Target</span>
                                     <span id="unlockBlockHeight" class="block-value">263527</span>
                                 </div>
                             </div>
-                            <div class="progress-container">
-                                <div id="progressBar" class="progress-bar"></div>
-                            </div>
+                            <div class="progress-container"><div id="progressBar" class="progress-bar"></div></div>
                         </div>
                         <div id="blockStatus" class="status-indicator pending">
                              <div class="countdown-grid">
-                                <div class="countdown-item">
-                                    <span id="countdownDays" class="countdown-value">--</span>
-                                    <span class="countdown-label">Days</span>
-                                </div>
-                                <div class="countdown-item">
-                                    <span id="countdownHours" class="countdown-value">--</span>
-                                    <span class="countdown-label">Hours</span>
-                                </div>
-                                <div class="countdown-item">
-                                    <span id="countdownMinutes" class="countdown-value">--</span>
-                                    <span class="countdown-label">Minutes</span>
-                                </div>
-                                <div class="countdown-item">
-                                    <span id="countdownSeconds" class="countdown-value">--</span>
-                                    <span class="countdown-label">Seconds</span>
-                                </div>
+                                <div><span id="countdownDays">--</span><label>Days</label></div>
+                                <div><span id="countdownHours">--</span><label>Hours</label></div>
+                                <div><span id="countdownMinutes">--</span><label>Mins</label></div>
+                                <div><span id="countdownSeconds">--</span><label>Secs</label></div>
                             </div>
-                            <p class="status-text">Capsule unlocks in approx. <span id="blocksRemaining">...</span> blocks</p>
+                            <p class="status-text">Unlocks in approx. <span id="blocksRemaining">...</span> blocks</p>
                         </div>
                     </article>
 
                     <article id="messageSection" class="card">
-                        <h2 class="card-title">✉ Store Your Message</h2>
+                        <h2 class="card-title">✉️ Create Your Capsule</h2>
                         <div class="alert alert-info">
-                            <h3 class="alert-title">🔒 Message Encoding</h3>
-                            <p class="alert-text">
-                                Messages are Base64 encoded, not truly encrypted. They will be publicly visible after the unlock block.
-                            </p>
+                            <h3 class="alert-title">Encoding Note</h3>
+                            <p class="alert-text">Messages are Base64 encoded (not encrypted) and public after unlock.</p>
                         </div>
-                        <textarea id="message" class="message-input" placeholder="Your message to the future... (max 150 chars, 80 bytes)"></textarea>
-                        <div class="char-counter"><span id="charCount">0</span>/150 chars (<span id="byteCount">0</span>/80 bytes)</div>
+                        <textarea id="message" class="message-input" placeholder="Your message to the future... (max 150 chars / 80 bytes)"></textarea>
+                        <div class="char-counter"><span id="charCount">0</span>/150 Chars (<span id="byteCount">0</span>/80 Bytes)</div>
                         <button id="encryptMessageBtn" class="btn btn-primary btn-full">Connect Wallet First</button>
 
-                        <div id="encryptionResult" class="encryption-result" style="display: none;">
+                        <div id="encryptionResult" style="display: none;">
                             <h3 class="card-subtitle">Encoded Message (Base64)</h3>
                             <p id="encodedMessageOutput" class="code-block"></p>
                             <h3 class="card-subtitle">Transaction Preview</h3>
                             <div id="output" class="transaction-details"></div>
-                            <button id="signTransaction" class="btn btn-primary btn-full" style="display: none;">Sign & Submit Capsule</button>
+                            <button id="signTransaction" class="btn btn-primary btn-full" style="display: none;">Sign & Create Capsule</button>
                         </div>
                     </article>
 
                     <article class="card">
-                        <h2 class="card-title">🔍 Retrieve Messages</h2>
+                        <h2 class="card-title">🔍 Retrieve Capsules</h2>
                         <div class="tabs">
                             <button class="tab-btn active" data-tab="storedTab">My Capsules (Demo)</button>
                             <button class="tab-btn" data-tab="retrieveTab">Lookup by ID (Demo)</button>
                         </div>
-
                         <div id="storedTab" class="tab-content active">
-                            <div id="storedMessagesList" class="message-list">
-                                <p>Loading stored messages...</p>
-                            </div>
-                            <button id="nextMessagesBtn" class="btn btn-secondary btn-full" style="display: none; margin-top: 1rem;">Load More</button>
+                            <div id="storedMessagesList" class="message-list"><p>Loading...</p></div>
                         </div>
-
                         <div id="retrieveTab" class="tab-content">
-                            <p class="card-text">Enter a message's transaction ID to check its status:</p>
+                            <p class="card-text">Enter a TxID to check capsule status:</p>
                             <div class="search-form">
                                 <input type="text" id="txIdInput" class="search-input" placeholder="Transaction ID...">
                                 <button id="checkMessageBtn" class="btn btn-secondary">Check</button>
                             </div>
-                            <div id="messageStatus" class="message-status"></div>
+                            <div id="messageStatus"></div>
                         </div>
                     </article>
                 </section>
@@ -258,79 +177,67 @@
 
     <footer class="site-footer">
         <div class="container">
-            <p class="footer-text">Bitcoin Time Capsule Contract © 2024-2025. Experimental Signet Project.</p>
-            <div class="donation-section">
-                <p class="donation-title">Support this project (BTC Signet):</p>
-                <div class="donation-address" id="donationAddress">
-                    <span id="donationAddressText">bc1qyetzzylgkyq6rcqx4uu9jyrhzs0ume44t9rfrw</span>
-                    <svg class="copy-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                    <span class="copy-confirmation">Copied!</span>
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <h4>About Time Capsule</h4>
+                    <p>An experimental Bitcoin Signet application demonstrating time-locked message storage using Ordinals-inspired techniques. For educational and testing purposes only.</p>
+                </div>
+                <div class="footer-column">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#" id="footerForceConnect">Connect Wallet</a></li>
+                        <li><a href="https://github.com/internetmoneylabs/TimeCapsuleContract" target="_blank">View on GitHub</a></li>
+                        <li><a href="https://bitcoin.org/en/bitcoin-for-individuals" target="_blank">Learn Bitcoin</a></li>
+                        <li><a href="https://docs.ordinals.com/" target="_blank">Ordinals Docs</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Support & Disclaimer</h4>
+                    <p>This project is offered as-is. No guarantees or warranties. Use at your own risk. All transactions are on the Signet test network and involve no real monetary value.</p>
+                    <div class="donation-section">
+                        <p class="donation-title">Support (Signet tBTC):</p>
+                        <div class="donation-address" id="donationAddress">
+                            <span id="donationAddressText">bc1qyetzzylgkyq6rcqx4uu9jyrhzs0ume44t9rfrw</span>
+                            <svg class="copy-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            <span class="copy-confirmation">Copied!</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <p class="visitor-counter">Visitors: <span id="visitorCount">1</span></p>
+            <p class="footer-copyright">Bitcoin Time Capsule © 2024-2025. <span class="visitor-counter">Visitors: <span id="visitorCount">1</span></span></p>
         </div>
     </footer>
 
     <div id="modalOverlay" class="modal-overlay">
         <div class="modal">
-            <div class="modal-header">
-                <h3 id="modalTitle" class="modal-title">Notification</h3>
-                <button id="modalClose" class="modal-close">×</button>
-            </div>
+            <div class="modal-header"><h3 id="modalTitle">Notification</h3><button id="modalClose" class="modal-close">×</button></div>
             <div id="modalBody" class="modal-body"></div>
-            <div class="modal-footer">
-                <button id="modalOk" class="btn btn-primary">OK</button>
-            </div>
+            <div class="modal-footer"><button id="modalOk" class="btn btn-primary">OK</button></div>
         </div>
     </div>
 
     <div id="walletSelectionModal" class="modal-overlay">
         <div class="modal wallet-modal">
-            <div class="modal-header">
-                <h3 class="modal-title">Select Bitcoin Wallet</h3>
-                <button id="walletModalClose" class="modal-close">×</button>
-            </div>
+            <div class="modal-header"><h3 class="modal-title">Select Wallet</h3><button id="walletModalClose" class="modal-close">×</button></div>
             <div class="modal-body">
-                <p id="walletSelectInstruction">Choose a wallet to connect to Signet.</p>
+                <p id="walletSelectInstruction">Choose a wallet for Signet.</p>
                 <div class="wallet-grid">
-                    <button class="wallet-option" data-wallet="unisat">
-                         <img src="unisat-logo.png" alt="Unisat Wallet Logo">
-                        <span>Unisat</span>
-                    </button>
-                    <button class="wallet-option" data-wallet="xverse">
-                         <img src="xverse-logo.png" alt="Xverse Wallet Logo">
-                        <span>Xverse</span>
-                    </button>
-                    <button class="wallet-option" data-wallet="okx">
-                         <img src="okx-logo.png" alt="OKX Wallet Logo">
-                        <span>OKX</span>
-                    </button>
-                    <button class="wallet-option" data-wallet="leather">
-                         <img src="leather-logo.png" alt="Leather Wallet Logo">
-                        <span>Leather</span>
-                    </button>
+                    <button class="wallet-option" data-wallet="unisat"><img src="unisat-logo.png" alt="Unisat"><span>Unisat</span></button>
+                    <button class="wallet-option" data-wallet="xverse"><img src="xverse-logo.png" alt="Xverse"><span>Xverse</span></button>
+                    <button class="wallet-option" data-wallet="okx"><img src="okx-logo.png" alt="OKX"><span>OKX</span></button>
+                    <button class="wallet-option" data-wallet="leather"><img src="leather-logo.png" alt="Leather"><span>Leather</span></button>
                 </div>
                  <div id="walletAvailabilityMessage" class="alert alert-warning" style="display: none; margin-top: var(--space-md);">
                      <h3 class="alert-title">No Wallets Detected</h3>
-                     <p class="alert-text">Please install a supported Bitcoin wallet extension (Unisat, Xverse, OKX, Leather) or ensure it's enabled.</p>
+                     <p class="alert-text">Please install or enable a supported Bitcoin wallet extension.</p>
                  </div>
             </div>
-            <div class="modal-footer">
-                <p class="wallet-disclaimer">By connecting, you agree to the <a href="#" id="tcppLink">Terms & Privacy Policy</a>.</p>
-            </div>
+            <div class="modal-footer"><p class="wallet-disclaimer">By connecting, you agree to <a href="#" id="tcppLink">Terms & Privacy</a>.</p></div>
         </div>
     </div>
-
     <script>
-        window.exports = {};
-        window.module = { exports: {} };
-        window.require = function(module) { return {}; };
-        if (!window.ethereum) {
-            Object.defineProperty(window, 'ethereum', { value: undefined, writable: true, configurable: true });
-        }
+        window.exports={}; window.module={exports:{}}; window.require=function(){return{};};
+        if(!window.ethereum)Object.defineProperty(window,'ethereum',{value:undefined,writable:true,configurable:true});
     </script>
     <script src="https://unpkg.com/sats-connect@1.2.0/dist/sats-connect.js"></script>
     <script src="script.js"></script>
