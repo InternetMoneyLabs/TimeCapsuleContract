@@ -348,13 +348,22 @@
 
     <!-- Fix for sats-connect module loading issue -->
     <script>
-        // Create a global exports object to prevent "exports is not defined" error with sats-connect
+        // Create global objects to prevent errors with sats-connect and other libraries
         window.exports = {};
-    </script>
-    <!-- Fix for sats-connect module loading issue -->
-    <script>
-        // Create a global exports object to prevent "exports is not defined" error with sats-connect
-        window.exports = {};
+        window.module = { exports: {} };
+        window.require = function(module) {
+            console.log("Mock require called for:", module);
+            return {}; // Return empty object as fallback
+        };
+        
+        // Prevent ethereum property redefinition conflicts
+        if (!window.ethereum) {
+            Object.defineProperty(window, 'ethereum', {
+                value: undefined,
+                writable: true,
+                configurable: true
+            });
+        }
     </script>
     <script src="https://unpkg.com/sats-connect@1.2.0"></script>
     <script src="script.js"></script>

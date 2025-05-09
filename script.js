@@ -418,89 +418,92 @@ async function checkInitialConnection() {
 function checkWalletsAvailability() {
     console.log("Checking wallet availability.");
     const walletSelectionModal = document.getElementById('walletSelectionModal');
-     if (!walletSelectionModal) {
-         console.error("walletSelectionModal not found in checkWalletsAvailability.");
-         return;
-     }
+    if (!walletSelectionModal) {
+        console.error("walletSelectionModal not found in checkWalletsAvailability.");
+        return;
+    }
     const walletOptions = walletSelectionModal.querySelectorAll('.wallet-option');
     const walletAvailabilityMessage = document.getElementById('walletAvailabilityMessage');
     const walletSelectInstruction = document.getElementById('walletSelectInstruction');
 
     if (!walletOptions.length || !walletAvailabilityMessage || !walletSelectInstruction) {
-         console.error("Wallet option buttons, availability message, or instruction element not found in wallet modal body.");
-         // This is a critical structural issue in index.html
-         return;
+        console.error("Wallet option buttons, availability message, or instruction element not found in wallet modal body.");
+        // This is a critical structural issue in index.html
+        return;
     }
 
-     let walletsFound = 0;
+    let walletsFound = 0;
 
-     // Unisat (uses window.unisat)
-     if (typeof window.unisat !== 'undefined') {
-         document.querySelector('.wallet-option[data-wallet="unisat"]').classList.remove('unavailable');
-         document.querySelector('.wallet-option[data-wallet="unisat"]').classList.add('available');
-         document.querySelector('.wallet-option[data-wallet="unisat"]').style.display = 'flex';
-         walletsFound++;
-         console.log("Unisat detected.");
-     } else {
-          document.querySelector('.wallet-option[data-wallet="unisat"]').classList.remove('available');
-          document.querySelector('.wallet-option[data-wallet="unisat"]').classList.add('unavailable');
-          document.querySelector('.wallet-option[data-wallet="unisat"]').style.display = 'none';
-           console.log("Unisat not detected.");
-     }
+    // Helper function to update wallet option visibility
+    function updateWalletOption(selector, isAvailable) {
+        const option = document.querySelector(selector);
+        if (option) {
+            if (isAvailable) {
+                option.classList.remove('unavailable');
+                option.classList.add('available');
+                option.style.display = 'flex';
+                walletsFound++;
+            } else {
+                option.classList.remove('available');
+                option.classList.add('unavailable');
+                // Don't hide unavailable wallets, just mark them as unavailable
+                option.style.display = 'flex';
+            }
+        }
+    }
 
-     // Xverse (uses window.BitcoinProvider) - check Sats Connect compatibility
-     if (typeof window.BitcoinProvider !== 'undefined') {
-        document.querySelector('.wallet-option[data-wallet="xverse"]').classList.remove('unavailable');
-        document.querySelector('.wallet-option[data-wallet="xverse"]').classList.add('available');
-        document.querySelector('.wallet-option[data-wallet="xverse"]').style.display = 'flex';
-         walletsFound++;
-          console.log("Xverse (via BitcoinProvider) detected.");
-     } else {
-        document.querySelector('.wallet-option[data-wallet="xverse"]').classList.remove('available');
-        document.querySelector('.wallet-option[data-wallet="xverse"]').classList.add('unavailable');
-        document.querySelector('.wallet-option[data-wallet="xverse"]').style.display = 'none';
-         console.log("Xverse (via BitcoinProvider) not detected.");
-     }
+    // Check for Unisat with retry
+    setTimeout(() => {
+        const unisatAvailable = typeof window.unisat !== 'undefined';
+        updateWalletOption('.wallet-option[data-wallet="unisat"]', unisatAvailable);
+        console.log(unisatAvailable ? "Unisat detected." : "Unisat not detected.");
+    }, 100);
 
-     // OKX (uses window.okxwallet.bitcoin)
-     if (typeof window.okxwallet !== 'undefined' && typeof window.okxwallet.bitcoin !== 'undefined') {
-          document.querySelector('.wallet-option[data-wallet="okx"]').classList.remove('unavailable');
-          document.querySelector('.wallet-option[data-wallet="okx"]').classList.add('available');
-          document.querySelector('.wallet-option[data-wallet="okx"]').style.display = 'flex';
-         walletsFound++;
-         console.log("OKX detected.");
-     } else {
-        document.querySelector('.wallet-option[data-wallet="okx"]').classList.remove('available');
-        document.querySelector('.wallet-option[data-wallet="okx"]').classList.add('unavailable');
-        document.querySelector('.wallet-option[data-wallet="okx"]').style.display = 'none';
-         console.log("OKX not detected.");
-     }
+    // Check for Xverse with retry
+    setTimeout(() => {
+        // Check both BitcoinProvider and satsconnect for Xverse
+        const xverseAvailable = 
+            typeof window.BitcoinProvider !== 'undefined' || 
+            (typeof window.satsconnect !== 'undefined' && typeof window.satsconnect.request === 'function');
+        updateWalletOption('.wallet-option[data-wallet="xverse"]', xverseAvailable);
+        console.log(xverseAvailable ? "Xverse detected." : "Xverse not detected.");
+    }, 100);
 
-     // Leather (uses window.Leather or window.StacksProvider) - check Sats Connect compatibility
-      if (typeof window.Leather !== 'undefined' || typeof window.StacksProvider !== 'undefined') {
-         document.querySelector('.wallet-option[data-wallet="leather"]').classList.remove('unavailable');
-         document.querySelector('.wallet-option[data-wallet="leather"]').classList.add('available');
-         document.querySelector('.wallet-option[data-wallet="leather"]').style.display = 'flex';
-         walletsFound++;
-         console.log("Leather detected.");
-      } else {
-         document.querySelector('.wallet-option[data-wallet="leather"]').classList.remove('available');
-         document.querySelector('.wallet-option[data-wallet="leather"]').classList.add('unavailable');
-         document.querySelector('.wallet-option[data-wallet="leather"]').style.display = 'none';
-         console.log("Leather not detected.");
-      }
+    // Check for OKX with retry
+    setTimeout(() => {
+        const okxAvailable = 
+            typeof window.okxwallet !== 'undefined' && 
+            typeof window.okxwallet.bitcoin !== 'undefined';
+        updateWalletOption('.wallet-option[data-wallet="okx"]', okxAvailable);
+        console.log(okxAvailable ? "OKX detected." : "OKX not detected.");
+    }, 100);
 
-     console.log(`Wallets found: ${walletsFound}`);
+    // Check for Leather with retry
+    setTimeout(() => {
+        const leatherAvailable = 
+            typeof window.Leather !== 'undefined' || 
+            typeof window.StacksProvider !== 'undefined' ||
+            (typeof window.satsconnect !== 'undefined' && typeof window.satsconnect.request === 'function');
+        updateWalletOption('.wallet-option[data-wallet="leather"]', leatherAvailable);
+        console.log(leatherAvailable ? "Leather detected." : "Leather not detected.");
+    }, 100);
 
-     if (walletsFound === 0) {
-         walletSelectInstruction.style.display = 'none'; // Hide the instruction
-         walletAvailabilityMessage.style.display = 'block'; // Show the "No Wallets Found" message
-         console.log("No wallets found, showing message.");
-     } else {
-         walletSelectInstruction.style.display = 'block'; // Show the instruction
-         walletAvailabilityMessage.style.display = 'none'; // Hide the "No Wallets Found" message
-          console.log("Wallets found, showing options.");
-     }
+    // Final check after all wallet detection attempts
+    setTimeout(() => {
+        console.log(`Wallets found: ${walletsFound}`);
+        
+        // Always show all wallet options, but mark unavailable ones
+        walletOptions.forEach(option => {
+            option.style.display = 'flex';
+        });
+        
+        walletSelectInstruction.style.display = 'block';
+        walletAvailabilityMessage.style.display = walletsFound === 0 ? 'block' : 'none';
+        
+        console.log(walletsFound > 0 ? 
+            "Wallets found, showing options." : 
+            "No wallets found, showing all options with unavailable state.");
+    }, 300);
 }
 
 
@@ -514,63 +517,128 @@ async function connectToWallet(walletType) {
         let accounts = [];
         let currentNetwork = { network: 'unknown' };
          let walletInstance = null; // Store the actual wallet API object
+         
+        // Add a small delay to ensure wallet providers are fully loaded
+        await new Promise(resolve => setTimeout(resolve, 100));
 
 
         if (walletType === 'unisat' && typeof window.unisat !== 'undefined') {
             walletInstance = window.unisat;
-            accounts = await walletInstance.requestAccounts();
-            currentNetwork = await walletInstance.getNetwork();
-            currentWallet = walletInstance; // Set currentWallet to the actual provider
+            try {
+                accounts = await walletInstance.requestAccounts();
+                currentNetwork = await walletInstance.getNetwork();
+                currentWallet = walletInstance; // Set currentWallet to the actual provider
+            } catch (error) {
+                console.error("Error connecting to Unisat wallet:", error);
+                throw new Error(`Unisat wallet connection failed: ${error.message || error}`);
+            }
 
         } else if (walletType === 'xverse' && typeof window.BitcoinProvider !== 'undefined' && typeof window.satsconnect !== 'undefined') {
              // Sats Connect for Xverse
              console.log("Using Sats Connect for Xverse connection.");
-             const response = await window.satsconnect.request('wallet_connect', {
-                addresses: ['ordinals', 'payment'],
-                network: CONTRACT_CONFIG.network // Request Signet network
-            });
+             try {
+                 const response = await window.satsconnect.request('wallet_connect', {
+                    addresses: ['ordinals', 'payment'],
+                    network: CONTRACT_CONFIG.network // Request Signet network
+                });
 
-            if (response.status === 'success') {
-                accounts = response.result.addresses;
-                 const paymentAddressInfo = accounts.find(acc => acc.purpose === 'payment');
-                 if (paymentAddressInfo && paymentAddressInfo.network) {
-                      currentNetwork = { network: paymentAddressInfo.network.toLowerCase() };
-                 } else {
-                      throw new Error("Could not retrieve network information from Xverse (Sats Connect).");
-                 }
-                 // Set currentWallet to use simulated Sats Connect methods
-                 currentWallet = {
-                    requestAccounts: async () => accounts.map(acc => acc.address),
-                    getNetwork: async () => currentNetwork,
-                    signPsbt: async (psbtHex, options) => {
-                         console.log("Using Sats Connect signPsbt for Xverse");
-                         const signResponse = await window.satsconnect.request('wallet_signPsbt', {
-                            psbtHex: psbtHex,
-                            network: CONTRACT_CONFIG.network,
-                             ...options // Pass options like autoFinalized, etc.
-                         });
-                         if (signResponse.status === 'success') {
-                             return signResponse.result.psbtHex;
-                         } else {
-                             throw new Error(signResponse.error || 'PSBT signing failed in Xverse (Sats Connect).');
-                         }
-                    },
-                     pushTx: async (signedTxHex) => {
-                         console.log("Using Sats Connect pushTx for Xverse");
-                         const pushResponse = await window.satsconnect.request('wallet_pushTx', {
-                            txHex: signedTxHex,
-                             network: CONTRACT_CONFIG.network // Specify network for push
-                         });
-                         if (pushResponse.status === 'success') {
-                             return pushResponse.result.txId;
-                         } else {
-                              throw new Error(pushResponse.error || 'Transaction push failed in Xverse (Sats Connect).');
-                         }
+                if (response.status === 'success') {
+                    accounts = response.result.addresses;
+                     const paymentAddressInfo = accounts.find(acc => acc.purpose === 'payment');
+                     if (paymentAddressInfo && paymentAddressInfo.network) {
+                          currentNetwork = { network: paymentAddressInfo.network.toLowerCase() };
+                     } else {
+                          throw new Error("Could not retrieve network information from Xverse (Sats Connect).");
                      }
-                 };
+                     // Set currentWallet to use simulated Sats Connect methods
+                     currentWallet = {
+                        requestAccounts: async () => accounts.map(acc => acc.address),
+                        getNetwork: async () => currentNetwork,
+                        signPsbt: async (psbtHex, options) => {
+                             console.log("Using Sats Connect signPsbt for Xverse");
+                             const signResponse = await window.satsconnect.request('wallet_signPsbt', {
+                                psbtHex: psbtHex,
+                                network: CONTRACT_CONFIG.network,
+                                 ...options // Pass options like autoFinalized, etc.
+                             });
+                             if (signResponse.status === 'success') {
+                                 return signResponse.result.psbtHex;
+                             } else {
+                                 throw new Error(signResponse.error || 'PSBT signing failed in Xverse (Sats Connect).');
+                             }
+                        },
+                         pushTx: async (signedTxHex) => {
+                             console.log("Using Sats Connect pushTx for Xverse");
+                             const pushResponse = await window.satsconnect.request('wallet_pushTx', {
+                                txHex: signedTxHex,
+                                 network: CONTRACT_CONFIG.network // Specify network for push
+                             });
+                             if (pushResponse.status === 'success') {
+                                 return pushResponse.result.txId;
+                             } else {
+                                  throw new Error(pushResponse.error || 'Transaction push failed in Xverse (Sats Connect).');
+                             }
+                         }
+                     };
+                } else {
+                    throw new Error(response.error || 'Xverse connection failed (Sats Connect).');
+                }
+             } catch (error) {
+                console.error("Error connecting to Xverse via Sats Connect:", error);
+                throw new Error(`Xverse connection failed: ${error.message || error}`);
+             }
+        } else if (walletType === 'xverse' && typeof window.satsconnect !== 'undefined') {
+            // Fallback to just satsconnect if BitcoinProvider isn't available
+            console.log("Using Sats Connect for Xverse connection (fallback).");
+            try {
+                const response = await window.satsconnect.request('wallet_connect', {
+                    addresses: ['ordinals', 'payment'],
+                    network: CONTRACT_CONFIG.network
+                });
 
-            } else {
-                throw new Error(response.error || 'Xverse connection failed (Sats Connect).');
+                if (response.status === 'success') {
+                    accounts = response.result.addresses;
+                    const paymentAddressInfo = accounts.find(acc => acc.purpose === 'payment');
+                    if (paymentAddressInfo && paymentAddressInfo.network) {
+                        currentNetwork = { network: paymentAddressInfo.network.toLowerCase() };
+                    } else {
+                        currentNetwork = { network: CONTRACT_CONFIG.network }; // Default to configured network
+                    }
+                    
+                    // Set up wallet interface
+                    currentWallet = {
+                        requestAccounts: async () => accounts.map(acc => acc.address),
+                        getNetwork: async () => currentNetwork,
+                        signPsbt: async (psbtHex, options) => {
+                            const signResponse = await window.satsconnect.request('wallet_signPsbt', {
+                                psbtHex: psbtHex,
+                                network: CONTRACT_CONFIG.network,
+                                ...options
+                            });
+                            if (signResponse.status === 'success') {
+                                return signResponse.result.psbtHex;
+                            } else {
+                                throw new Error(signResponse.error || 'PSBT signing failed (Sats Connect).');
+                            }
+                        },
+                        pushTx: async (signedTxHex) => {
+                            const pushResponse = await window.satsconnect.request('wallet_pushTx', {
+                                txHex: signedTxHex,
+                                network: CONTRACT_CONFIG.network
+                            });
+                            if (pushResponse.status === 'success') {
+                                return pushResponse.result.txId;
+                            } else {
+                                throw new Error(pushResponse.error || 'Transaction push failed (Sats Connect).');
+                            }
+                        }
+                    };
+                } else {
+                    throw new Error(response.error || 'Xverse connection failed (Sats Connect fallback).');
+                }
+            } catch (error) {
+                console.error("Error connecting to Xverse via Sats Connect fallback:", error);
+                throw new Error(`Xverse connection failed: ${error.message || error}`);
             }
 
         } else if (walletType === 'okx' && typeof window.okxwallet !== 'undefined' && typeof window.okxwallet.bitcoin !== 'undefined') {
@@ -585,7 +653,19 @@ async function connectToWallet(walletType) {
              }
 
              // Check network after connecting
-            currentNetwork = await walletInstance.getNetwork(); // OKX might have getNetwork or similar
+            try {
+                currentNetwork = await walletInstance.getNetwork();
+                // If network is undefined, set it to signet manually
+                if (!currentNetwork || !currentNetwork.network) {
+                    console.log("OKX wallet returned undefined network, defaulting to signet");
+                    currentNetwork = { network: 'signet' };
+                }
+            } catch (networkError) {
+                console.warn("Failed to get network from OKX wallet:", networkError);
+                // Default to signet if we can't get the network
+                currentNetwork = { network: 'signet' };
+            }
+            
             currentWallet = walletInstance; // Set currentWallet to the actual provider
 
         } else if (walletType === 'leather') {
@@ -595,53 +675,58 @@ async function connectToWallet(walletType) {
                     // Try Sats Connect first if available
                     if (typeof window.satsconnect !== 'undefined') {
                         console.log("Using Sats Connect for Leather connection.");
-                        const response = await window.satsconnect.request('wallet_connect', {
-                            addresses: ['ordinals', 'payment'],
-                            network: CONTRACT_CONFIG.network
-                        });
+                        try {
+                            const response = await window.satsconnect.request('wallet_connect', {
+                                addresses: ['ordinals', 'payment'],
+                                network: CONTRACT_CONFIG.network
+                            });
 
-                        if (response.status === 'success') {
-                            accounts = response.result.addresses;
-                            const paymentAddressInfo = accounts.find(acc => acc.purpose === 'payment');
-                            if (paymentAddressInfo && paymentAddressInfo.network) {
-                                currentNetwork = { network: paymentAddressInfo.network.toLowerCase() };
-                            } else {
-                                currentNetwork = { network: 'unknown' };
-                                console.warn("Could not retrieve network information from Leather (Sats Connect).");
-                            }
-                            
-                            // Set currentWallet to use simulated Sats Connect methods
-                            currentWallet = {
-                                requestAccounts: async () => accounts.map(acc => acc.address),
-                                getNetwork: async () => currentNetwork,
-                                signPsbt: async (psbtHex, options) => {
-                                    console.log("Using Sats Connect signPsbt for Leather");
-                                    const signResponse = await window.satsconnect.request('wallet_signPsbt', {
-                                        psbtHex: psbtHex,
-                                        network: CONTRACT_CONFIG.network,
-                                        ...options
-                                    });
-                                    if (signResponse.status === 'success') {
-                                        return signResponse.result.psbtHex;
-                                    } else {
-                                        throw new Error(signResponse.error || 'PSBT signing failed in Leather (Sats Connect).');
-                                    }
-                                },
-                                pushTx: async (signedTxHex) => {
-                                    console.log("Using Sats Connect pushTx for Leather");
-                                    const pushResponse = await window.satsconnect.request('wallet_pushTx', {
-                                        txHex: signedTxHex,
-                                        network: CONTRACT_CONFIG.network
-                                    });
-                                    if (pushResponse.status === 'success') {
-                                        return pushResponse.result.txId;
-                                    } else {
-                                        throw new Error(pushResponse.error || 'Transaction push failed in Leather (Sats Connect).');
-                                    }
+                            if (response.status === 'success') {
+                                accounts = response.result.addresses;
+                                const paymentAddressInfo = accounts.find(acc => acc.purpose === 'payment');
+                                if (paymentAddressInfo && paymentAddressInfo.network) {
+                                    currentNetwork = { network: paymentAddressInfo.network.toLowerCase() };
+                                } else {
+                                    currentNetwork = { network: 'signet' }; // Default to signet
+                                    console.warn("Could not retrieve network information from Leather (Sats Connect), defaulting to signet.");
                                 }
-                            };
-                        } else {
-                            throw new Error(response.error || 'Leather connection failed (Sats Connect).');
+                                
+                                // Set currentWallet to use simulated Sats Connect methods
+                                currentWallet = {
+                                    requestAccounts: async () => accounts.map(acc => acc.address),
+                                    getNetwork: async () => currentNetwork,
+                                    signPsbt: async (psbtHex, options) => {
+                                        console.log("Using Sats Connect signPsbt for Leather");
+                                        const signResponse = await window.satsconnect.request('wallet_signPsbt', {
+                                            psbtHex: psbtHex,
+                                            network: CONTRACT_CONFIG.network,
+                                            ...options
+                                        });
+                                        if (signResponse.status === 'success') {
+                                            return signResponse.result.psbtHex;
+                                        } else {
+                                            throw new Error(signResponse.error || 'PSBT signing failed in Leather (Sats Connect).');
+                                        }
+                                    },
+                                    pushTx: async (signedTxHex) => {
+                                        console.log("Using Sats Connect pushTx for Leather");
+                                        const pushResponse = await window.satsconnect.request('wallet_pushTx', {
+                                            txHex: signedTxHex,
+                                            network: CONTRACT_CONFIG.network
+                                        });
+                                        if (pushResponse.status === 'success') {
+                                            return pushResponse.result.txId;
+                                        } else {
+                                            throw new Error(pushResponse.error || 'Transaction push failed in Leather (Sats Connect).');
+                                        }
+                                    }
+                                };
+                            } else {
+                                throw new Error(response.error || 'Leather connection failed (Sats Connect).');
+                            }
+                        } catch (error) {
+                            console.error("Error connecting to Leather via Sats Connect:", error);
+                            throw new Error(`Leather connection failed: ${error.message || error}`);
                         }
                     } 
                     // If Sats Connect isn't available or failed, try native Leather API
@@ -649,7 +734,7 @@ async function connectToWallet(walletType) {
                         walletInstance = window.Leather;
                         console.log("Using Leather native API.");
                         accounts = await walletInstance.requestAccounts();
-                        currentNetwork = { network: 'unknown' }; // Default to unknown, will be checked/prompted
+                        currentNetwork = { network: 'signet' }; // Default to signet for Leather
                         currentWallet = walletInstance;
                         
                         // Bind native API methods if they exist
@@ -669,6 +754,54 @@ async function connectToWallet(walletType) {
                 } catch (error) {
                     console.error("Failed to connect to Leather wallet:", error);
                     throw new Error(`Leather wallet connection failed: ${error.message || error}`);
+                }
+            } else if (typeof window.satsconnect !== 'undefined') {
+                // Try using satsconnect directly if Leather isn't detected but satsconnect is available
+                console.log("Trying to connect to Leather via Sats Connect fallback.");
+                try {
+                    const response = await window.satsconnect.request('wallet_connect', {
+                        addresses: ['ordinals', 'payment'],
+                        network: CONTRACT_CONFIG.network
+                    });
+
+                    if (response.status === 'success') {
+                        accounts = response.result.addresses;
+                        currentNetwork = { network: 'signet' }; // Default to signet
+                        
+                        // Set up wallet interface
+                        currentWallet = {
+                            requestAccounts: async () => accounts.map(acc => acc.address),
+                            getNetwork: async () => currentNetwork,
+                            signPsbt: async (psbtHex, options) => {
+                                const signResponse = await window.satsconnect.request('wallet_signPsbt', {
+                                    psbtHex: psbtHex,
+                                    network: CONTRACT_CONFIG.network,
+                                    ...options
+                                });
+                                if (signResponse.status === 'success') {
+                                    return signResponse.result.psbtHex;
+                                } else {
+                                    throw new Error(signResponse.error || 'PSBT signing failed (Sats Connect).');
+                                }
+                            },
+                            pushTx: async (signedTxHex) => {
+                                const pushResponse = await window.satsconnect.request('wallet_pushTx', {
+                                    txHex: signedTxHex,
+                                    network: CONTRACT_CONFIG.network
+                                });
+                                if (pushResponse.status === 'success') {
+                                    return pushResponse.result.txId;
+                                } else {
+                                    throw new Error(pushResponse.error || 'Transaction push failed (Sats Connect).');
+                                }
+                            }
+                        };
+                    } else {
+                        throw new Error(response.error || 'Leather connection failed (Sats Connect fallback).');
+                    }
+                } catch (error) {
+                    console.error("Error connecting to Leather via Sats Connect fallback:", error);
+                    throw new Error(`Leather connection failed: ${error.message || error}`);
                 }
             } else {
                 console.error(`Wallet provider for ${walletType} not found or supported API not available.`);
@@ -697,24 +830,14 @@ async function connectToWallet(walletType) {
             const walletStatus = document.getElementById('walletStatus');
             if (walletStatus) walletStatus.textContent = `Connected (${walletType}): Network unknown. Please verify network.`;
             
+            // Default to signet for Bitcoin wallets
+            currentNetwork = { network: 'signet' };
+            console.log("Defaulting to signet network for Bitcoin wallet");
+            
             // Attempt to switch network
             const switchConfirmed = await promptNetworkSwitch(walletType);
             if (!switchConfirmed) {
                 throw new Error(`Please manually switch your ${walletType} to Bitcoin ${CONTRACT_CONFIG.network.toUpperCase()} to proceed.`);
-            }
-            
-            // Re-check network after switch attempt
-            if (currentWallet && currentWallet.getNetwork) {
-                try {
-                    currentNetwork = await currentWallet.getNetwork();
-                } catch (getNetworkError) {
-                    console.warn("Failed to get network after switch attempt:", getNetworkError);
-                    // If still can't get network, assume it's correct after user confirmation
-                    currentNetwork = { network: CONTRACT_CONFIG.network };
-                }
-            } else {
-                // If can't check network, assume it's correct after user confirmation
-                currentNetwork = { network: CONTRACT_CONFIG.network };
             }
         }
 
